@@ -3,3 +3,10 @@
 # misc
 .DS_Store
 *.pem
+
+# Java / Maven
+target/
+
+# IDEs
+.idea/
+*.iml
