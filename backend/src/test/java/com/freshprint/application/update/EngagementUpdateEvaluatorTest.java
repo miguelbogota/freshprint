@@ -1,7 +1,6 @@
 package com.freshprint.application.update;
 
 import com.freshprint.domain.engagement.EngagementBaseline;
-import com.freshprint.domain.engagement.EngagementUpdateState;
 import com.freshprint.domain.engagement.UpdateStatus;
 import com.freshprint.domain.template.TemplateMetadata;
 import com.freshprint.testfixture.FixtureLoader;
