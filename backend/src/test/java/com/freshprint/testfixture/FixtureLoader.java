@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.stream.StreamSupport;
 
 /**
  * Loads the shared JSON fixtures into domain objects for tests.
@@ -60,7 +61,8 @@ public final class FixtureLoader {
             node.get("templateId").textValue(),
             node.get("displayName").textValue(),
             latestVersion,
-            publishedAt(node.get("versions"), latestVersion));
+            publishedAt(node.get("versions"), latestVersion),
+            publishedVersions(node.get("versions")));
       }
     }
     throw new IllegalArgumentException("Template fixture not found: " + templateId);
@@ -102,6 +104,18 @@ public final class FixtureLoader {
       }
     }
     throw new IllegalArgumentException("Latest template version is missing");
+  }
+
+  /**
+   * Extracts the ordered published version numbers from template metadata.
+   *
+   * @param versions published version nodes
+   * @return ordered version numbers
+   */
+  private static java.util.List<Integer> publishedVersions(JsonNode versions) {
+    return StreamSupport.stream(versions.spliterator(), false)
+        .map(version -> version.get("version").intValue())
+        .toList();
   }
 
   /**

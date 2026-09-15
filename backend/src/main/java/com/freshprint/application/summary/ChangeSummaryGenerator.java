@@ -1,6 +1,9 @@
 package com.freshprint.application.summary;
 
 import com.freshprint.application.summary.strategy.ChangeSummaryStrategy;
+import com.freshprint.application.summary.strategy.FallbackChangeSummaryStrategy;
+import com.freshprint.application.summary.strategy.QuestionChangeSummaryStrategy;
+import com.freshprint.application.summary.strategy.SectionChangeSummaryStrategy;
 import com.freshprint.domain.summary.ChangeSummary;
 import com.freshprint.domain.summary.SummaryChange;
 import com.freshprint.domain.summary.SummaryGroup;
@@ -38,6 +41,21 @@ public final class ChangeSummaryGenerator {
     if (this.strategies.isEmpty()) {
       throw new IllegalArgumentException("strategies must not be empty");
     }
+  }
+
+  /**
+   * Creates a generator with the standard strategies in the correct order.
+   *
+   * @param clock clock used to record when a summary was generated
+   * @return configured summary generator
+   */
+  public static ChangeSummaryGenerator standard(Clock clock) {
+    return new ChangeSummaryGenerator(
+        List.of(
+            new QuestionChangeSummaryStrategy(),
+            new SectionChangeSummaryStrategy(),
+            new FallbackChangeSummaryStrategy()),
+        clock);
   }
 
   /**

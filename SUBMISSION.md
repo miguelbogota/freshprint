@@ -2,7 +2,7 @@
 
 ## Assumptions Made
 
-- Template versions increase in order within a product template.
+- Published template versions are unique and stored in order within a product template. Version numbers do not need to be consecutive.
 - A reliable JSON diff can be generated directly between any two versions of the same template.
 - Template publication and engagement lifecycle actions can trigger hooks or events.
 - Hooks provide durable, retryable delivery so the metadata index can be kept up to date without reopening engagement files. Event handlers are idempotent, failed events can be retried, and a periodic reconciliation process detects and repairs any missed updates.
@@ -25,7 +25,7 @@ I used ChatGPT/Codex as a design and implementation assistant. So far, it has he
 - Identify edge cases such as accumulated versions, unavailable summaries, stale decisions, missed events, and existing unindexed engagements.
 - Keep the design aligned with the limited Java and Angular excerpts requested by the exercise.
 
-I plan to use AI during implementation for focused suggestions, test-case brainstorming, and code review. I will verify all generated code and keep only code I can explain and defend.
+During the Java implementation, I also used AI to discuss package boundaries, compare records with service classes, introduce the summary Strategy pattern, create fixture-backed test cases, and review the finished branch. I verified the generated code with Maven, Javadoc checks, JSON parsing, and a manual review of the domain rules.
 
 ### Where I corrected, rewrote, or ignored AI output
 
@@ -38,9 +38,11 @@ I also reviewed and changed several design choices during the discussion:
 - I kept the Java and Angular excerpts disconnected instead of adding a Spring/HTTP layer that the instructions explicitly exclude.
 - I chose backend transformation of raw diffs because it is shared business interpretation, while Angular remains responsible for presentation and interaction.
 - I selected a precompute-plus-on-demand strategy for summaries rather than recalculating them on every request.
+- I asked for the original package structure to be simplified and later added a `domain` parent once its purpose was clear.
+- I chose regular classes for services and strategies, while keeping immutable business values as records.
+- I changed the pending-version calculation from numeric subtraction to counting the actual published versions. This avoids assuming version numbers are consecutive.
+- I kept Jackson in the test scope and used a test fixture loader instead of adding JSON concerns to the production domain model.
 - I removed or postponed speculative features such as draft template migrations and detailed merge behavior because applying template content is outside scope.
-
-Before submitting, I will update this section with any generated implementation that I rewrote or rejected and the reason for doing so.
 
 ### How I would guide other engineers using AI on this system
 

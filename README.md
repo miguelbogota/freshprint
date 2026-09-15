@@ -55,7 +55,10 @@ domain/
 ├── template/     Templates and raw changes
 └── summary/      Changes written for humans
 
-application/port/ Interfaces for getting template data
+application/
+├── port/      Interfaces for getting template data
+├── update/    Checks engagement versions
+└── summary/   Builds readable summaries
 ```
 
 ## Run the tests
@@ -77,6 +80,7 @@ Done so far:
 - The main domain models
 - The service that checks for pending updates
 - The strategies that turn raw changes into simple summaries
+- The complete baseline-to-latest summary flow
 - A few focused tests
 
 Still to come:

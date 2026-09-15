@@ -41,19 +41,25 @@ public final class EngagementUpdateEvaluator {
     }
 
     var template = latestTemplate.get();
+    if (engagement.templateVersion() > template.latestVersion()) {
+      return new EngagementUpdateState.Unknown(
+          engagement.engagementId(),
+          "ENGAGEMENT_VERSION_AHEAD_OF_CATALOG");
+    }
+
+    if (!template.hasVersion(engagement.templateVersion())) {
+      return new EngagementUpdateState.Unknown(
+          engagement.engagementId(),
+          "ENGAGEMENT_VERSION_NOT_FOUND");
+    }
+
     if (engagement.templateVersion() == template.latestVersion()) {
       return new EngagementUpdateState.Current(engagement, template);
     }
 
-    if (engagement.templateVersion() < template.latestVersion()) {
-      return new EngagementUpdateState.Pending(
-          engagement,
-          template,
-          template.latestVersion() - engagement.templateVersion());
-    }
-
-    return new EngagementUpdateState.Unknown(
-        engagement.engagementId(),
-        "ENGAGEMENT_VERSION_AHEAD_OF_CATALOG");
+    return new EngagementUpdateState.Pending(
+        engagement,
+        template,
+        template.countVersionsAfter(engagement.templateVersion()));
   }
 }

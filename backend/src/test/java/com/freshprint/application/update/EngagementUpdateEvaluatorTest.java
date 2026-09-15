@@ -3,10 +3,13 @@ package com.freshprint.application.update;
 import com.freshprint.domain.engagement.EngagementBaseline;
 import com.freshprint.domain.engagement.EngagementUpdateState;
 import com.freshprint.domain.engagement.UpdateStatus;
+import com.freshprint.domain.template.TemplateMetadata;
 import com.freshprint.testfixture.FixtureLoader;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -38,6 +41,20 @@ class EngagementUpdateEvaluatorTest {
         "Future Engagement",
         "AUDIT-CA",
         6));
+    var skippedVersionTemplate = new TemplateMetadata(
+        "AUDIT-CA",
+        "Canadian Audit Engagement",
+        5,
+        Instant.parse("2026-08-18T13:00:00Z"),
+        List.of(3, 5));
+    var skippedVersionEvaluator = new EngagementUpdateEvaluator(
+        templateId -> Optional.of(skippedVersionTemplate));
+    var skippedVersionPending = assertInstanceOf(
+        EngagementUpdateState.Pending.class,
+        skippedVersionEvaluator.evaluate(FixtureLoader.engagement("ENG-1003")));
+    var unknownVersion = assertInstanceOf(
+        EngagementUpdateState.Unknown.class,
+        skippedVersionEvaluator.evaluate(FixtureLoader.engagement("ENG-1002")));
 
     var pendingState = assertInstanceOf(EngagementUpdateState.Pending.class, pending);
     var missingState = assertInstanceOf(EngagementUpdateState.Unknown.class, missing);
@@ -46,6 +63,8 @@ class EngagementUpdateEvaluatorTest {
     assertAll(
         () -> assertEquals(UpdateStatus.CURRENT, current.status()),
         () -> assertEquals(2, pendingState.pendingVersionCount()),
+        () -> assertEquals(1, skippedVersionPending.pendingVersionCount()),
+        () -> assertEquals("ENGAGEMENT_VERSION_NOT_FOUND", unknownVersion.reason()),
         () -> assertEquals("TEMPLATE_METADATA_UNAVAILABLE", missingState.reason()),
         () -> assertEquals("ENGAGEMENT_VERSION_AHEAD_OF_CATALOG", aheadState.reason()));
   }
