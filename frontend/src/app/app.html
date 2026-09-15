@@ -1,0 +1,30 @@
+<h1>Freshprint</h1>
+<p>Check which engagement files have template updates and review what changed.</p>
+
+<app-update-list
+  [items]="store.items()"
+  [selectedId]="store.selectedId()"
+  (selected)="store.select($event)"
+/>
+
+@if (store.selected(); as item) {
+  <app-update-detail
+    [item]="item"
+    [canDecide]="store.canDecide()"
+    (decision)="store.decide($event)"
+  />
+}
+
+@switch (store.decisionState()) {
+  @case ('SENDING') {
+    <p role="status">Sending your decision…</p>
+  }
+  @case ('ACCEPTED') {
+    <p role="status">
+      Decision accepted ({{ store.operationId() }}). The update has not been applied yet.
+    </p>
+  }
+  @case ('FAILED') {
+    <p role="alert">Could not send your decision. Please try again.</p>
+  }
+}

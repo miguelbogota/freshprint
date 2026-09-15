@@ -42,6 +42,7 @@ The backend turns the raw template diff into a simple summary. Those summaries c
 ```text
 freshprint/
 ├── backend/       Java code and tests
+├── frontend/      Angular excerpt and tests
 ├── fixtures/      Sample JSON data
 ├── DESIGN.md      The full system design
 └── SUBMISSION.md  Notes about decisions and AI usage
@@ -68,6 +69,15 @@ You need Java 26. Maven is already included in the project.
 ```shell
 cd backend
 ./mvnw clean test
+```
+
+The Angular excerpt uses Node 24.15+ or 26+:
+
+```shell
+cd frontend
+npm install
+npm test -- --watch=false
+npm run build
 ```
 
 ## Take-home checklist
@@ -99,20 +109,20 @@ The fixture provider selects a JSON diff by template and version pair. A missing
 
 ### Part 3 - Angular
 
-- [ ] Contract-shaped fixture data and client-side state
-- [ ] Engagement list showing pending-update states
-- [ ] Readable summary review
-- [ ] Apply or Decline action using the reviewed baseline and target versions
-- [ ] One or two focused tests if they demonstrate an important interaction
+- [x] Contract-shaped fixture data and client-side state
+- [x] Engagement list showing pending-update states
+- [x] Readable summary review
+- [x] Apply or Decline action using the reviewed baseline and target versions
+- [x] Two focused tests for summary display and decision state
 
-This excerpt should use hardcoded data, no HTTP calls, and unstyled markup. Actually merging updated template content is outside the exercise.
+This excerpt uses hardcoded data, no HTTP calls, and unstyled markup. Actually merging updated template content is outside the exercise.
 
 ### Before submission
 
 - [x] Submission notes for assumptions and AI usage
-- [ ] Add the finished Angular work to the submission notes
+- [x] Add the finished Angular work to the submission notes
 - [ ] Record approximate time spent and review the "what I would do next" section
-- [ ] Check that the design, JSON contract, Java, and Angular examples agree
+- [x] Check that the design, JSON contract, Java, and Angular examples agree
 - [ ] Be ready to explain and defend the code and AI-assisted decisions
 
 Want the more detailed version? Take a look at [DESIGN.md](DESIGN.md).
