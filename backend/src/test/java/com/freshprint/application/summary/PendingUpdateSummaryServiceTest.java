@@ -1,6 +1,5 @@
 package com.freshprint.application.summary;
 
-import com.freshprint.application.summary.strategy.StandardSummaryStrategies;
 import com.freshprint.application.update.EngagementUpdateEvaluator;
 import com.freshprint.domain.engagement.EngagementUpdateState;
 import com.freshprint.domain.summary.ChangeSummaryResult;
@@ -36,8 +35,7 @@ class PendingUpdateSummaryServiceTest {
         EngagementUpdateState.Pending.class,
         evaluator.evaluate(FixtureLoader.engagement("ENG-1007")));
     var diff = FixtureLoader.diff("template-diff-review-ca-v6-v8.json");
-    var generator = new ChangeSummaryGenerator(
-        StandardSummaryStrategies.create(),
+    var generator = ChangeSummaryGenerator.standard(
         Clock.fixed(Instant.parse("2026-08-25T13:04:55Z"), ZoneOffset.UTC));
     var availableService = new PendingUpdateSummaryService(
         (templateId, fromVersion, toVersion) -> Optional.of(diff),

@@ -1,7 +1,6 @@
 package com.freshprint.application.summary.strategy;
 
 import com.freshprint.domain.summary.SummaryChange;
-import com.freshprint.domain.summary.SummaryChangeKind;
 import com.freshprint.domain.template.TemplateChange;
 
 /**
@@ -53,20 +52,6 @@ public final class SectionChangeSummaryStrategy implements ChangeSummaryStrategy
 
     return new Result(
         SummaryStrategySupport.sectionName(change.path()),
-        new SummaryChange(kind(change), description, false));
-  }
-
-  /**
-   * Maps a raw change type to its user-facing category.
-   *
-   * @param change raw template change
-   * @return matching summary kind
-   */
-  private SummaryChangeKind kind(TemplateChange change) {
-    return switch (change) {
-      case TemplateChange.Added _ -> SummaryChangeKind.ADDED;
-      case TemplateChange.Replaced _ -> SummaryChangeKind.CHANGED;
-      case TemplateChange.Removed _ -> SummaryChangeKind.REMOVED;
-    };
+        new SummaryChange(SummaryStrategySupport.kind(change), description, false));
   }
 }

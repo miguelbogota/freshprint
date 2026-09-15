@@ -54,6 +54,6 @@ You need Java 26, but you do not need to install Maven.
 ./mvnw clean test
 ```
 
-The current tests cover update evaluation, missing metadata, skipped version numbers, multiple pending versions, direct multi-version diffs, readable summaries, unavailable summaries, unknown paths, invalid version combinations, raw diff operations, and immutable lists.
+The three focused tests cover update evaluation, missing metadata, skipped version numbers, multiple pending versions, direct multi-version diffs, readable summaries, unavailable summaries, unknown paths, and mismatched provider data.
 
 The bigger picture is in [DESIGN.md](../DESIGN.md).

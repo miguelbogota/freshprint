@@ -1,5 +1,8 @@
 package com.freshprint.application.summary.strategy;
 
+import com.freshprint.domain.summary.SummaryChangeKind;
+import com.freshprint.domain.template.TemplateChange;
+
 import java.util.Map;
 
 /**
@@ -54,6 +57,20 @@ final class SummaryStrategySupport {
       return quote(text);
     }
     return String.valueOf(value);
+  }
+
+  /**
+   * Maps a raw change type to its user-facing category.
+   *
+   * @param change raw template change
+   * @return matching summary kind
+   */
+  static SummaryChangeKind kind(TemplateChange change) {
+    return switch (change) {
+      case TemplateChange.Added _ -> SummaryChangeKind.ADDED;
+      case TemplateChange.Replaced _ -> SummaryChangeKind.CHANGED;
+      case TemplateChange.Removed _ -> SummaryChangeKind.REMOVED;
+    };
   }
 
   /**
