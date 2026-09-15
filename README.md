@@ -75,12 +75,12 @@ Done so far:
 - Sample data
 - The Java project
 - The main domain models
+- The service that checks for pending updates
+- The strategies that turn raw changes into simple summaries
 - A few focused tests
 
 Still to come:
 
-- The service that checks for pending updates
-- The strategies that turn raw changes into simple summaries
 - The Angular screen and state
 - Apply and Decline actions in the Angular example
 
