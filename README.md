@@ -1,128 +1,47 @@
 # Freshprint
 
-Freshprint is a small app for finding files that are using an old template.
+Freshprint is a small take-home demo for a simple question: a template changed after a working file was created, so which files need attention, and what changed?
 
-Think of it like this: you create a document from a template, the template changes later, and now you need to decide if you want those changes in your document. Freshprint shows you which files need attention and explains what changed without making you read a bunch of JSON.
+An _engagement_ is the firm's working file. A _product template_ is the starting blueprint for that file. Users can review a newer template and choose Apply or Decline. This project shows the decision flow; it does **not** merge template content into an engagement.
 
-This is still a work in progress.
+Opening one full engagement takes about a minute. The [design](DESIGN.md) therefore proposes a small metadata index for fast update lists. The index, HTTP API, hooks, and cache are design ideas, not running infrastructure in this repo.
 
-## The main idea
+## What's here
 
-Opening a full engagement file takes around one minute, so doing that for hundreds of files would be painfully slow.
+- [DESIGN.md](DESIGN.md) - the architecture, JSON contract, tests, operations, and tradeoffs.
+- [backend](backend/README.md) - plain Java code that checks versions and turns diffs into readable summaries.
+- [frontend](frontend/README.md) - an unstyled Angular screen with hardcoded data and Apply/Decline interactions.
+- [fixtures](fixtures/README.md) - sample templates, engagements, and JSON diffs.
+- [SUBMISSION.md](SUBMISSION.md) - assumptions, AI usage, time spent, and next steps.
 
-Instead, Freshprint keeps a small copy of the useful details:
+Java and Angular are separate excerpts. They use the same proposed update and decision shapes but do not call each other. A production API adapter would also handle fields missing from older, unindexed files.
 
-- The engagement ID and name
-- The template it uses
-- The template version it currently has
+## Try it
 
-It compares that version with the latest template and gives the engagement one of these statuses:
-
-- `CURRENT` - nothing to do
-- `PENDING` - there is a newer template
-- `UNKNOWN` - we do not have enough information yet
-
-If an engagement missed a few template versions, we compare its current version directly with the latest one. The user only sees the changes that actually matter now.
-
-## How it fits together
-
-```mermaid
-flowchart LR
-    A[Engagement metadata] --> C[Check for updates]
-    B[Latest template] --> C
-    C --> D[Create a simple change summary]
-    D --> E[Angular app]
-    E --> F[Apply or Decline]
-```
-
-The backend turns the raw template diff into a simple summary. Those summaries can be created ahead of time and cached. If one is missing, it can be created when it is requested.
-
-## What's in here?
-
-```text
-freshprint/
-├── backend/       Java code and tests
-├── frontend/      Angular excerpt and tests
-├── fixtures/      Sample JSON data
-├── DESIGN.md      The full system design
-└── SUBMISSION.md  Notes about decisions and AI usage
-```
-
-The Java code is grouped by what it does:
-
-```text
-domain/
-├── engagement/   Engagement versions and update statuses
-├── template/     Templates and raw changes
-└── summary/      Changes written for humans
-
-application/
-├── port/      Interfaces for getting template data
-├── update/    Checks engagement versions
-└── summary/   Builds readable summaries
-```
-
-## Run the tests
-
-You need Java 26. Maven is already included in the project.
+Java needs Java 26. The Maven wrapper is included:
 
 ```shell
 cd backend
 ./mvnw clean test
 ```
 
-The Angular excerpt uses Node 24.15+ or 26+:
+Angular 22 needs a supported Node version (24.15+ or 26+):
 
 ```shell
 cd frontend
 npm install
 npm test -- --watch=false
 npm run build
+npm start
 ```
 
 ## Take-home checklist
 
-The exercise asks for a small design and two code excerpts, not a running service.
+- [x] Design: architecture and client/server split, plan, testing, observability, failure modes, tradeoffs, and JSON API contract.
+- [x] Java: pending-update model, accumulated versions, readable server-side summaries, and three focused tests. No framework or HTTP layer.
+- [x] Angular: update list, summary review, Apply/Decline intent, hardcoded fixture, and two focused tests. No HTTP calls or CSS.
+- [x] Submission notes: assumptions, AI use, corrections, limits, and next steps.
+- [x] [SUBMISSION.md](SUBMISSION.md) now records the approximate active work time and the longer overnight elapsed time.
+- [ ] Before sending: make sure you can explain the choices in a live review.
 
-### Part 1 - design
-
-- [x] Short design covering architecture and the client/server boundary
-- [x] Implementation plan and testing strategy
-- [x] Evaluation, observability, failures, and tradeoffs
-- [x] JSON API contract with request/response shapes, freshness, and unavailable or computing summaries
-- [x] Explain why raw diffs become readable summaries in Java
-- [x] Architecture diagram
-
-These are in [DESIGN.md](DESIGN.md). The metadata index, hooks, summary cache, and HTTP API are production ideas in the design; they are not implemented here.
-
-### Part 2 - Java
-
-- [x] Plain Java domain models and interfaces, with no framework or HTTP layer
-- [x] Evaluate `CURRENT`, `PENDING`, and `UNKNOWN` from the engagement's recorded template version
-- [x] Count actual published versions when several updates have accumulated
-- [x] Request one direct baseline-to-latest template diff and verify its versions
-- [x] Turn raw diff changes into readable, grouped summaries on the server
-- [x] Represent available, computing, and unavailable summary states
-- [x] Three focused fixture-backed tests
-
-The fixture provider selects a JSON diff by template and version pair. A missing direct fixture returns an unavailable summary; in the proposed production system, the diff would be generated from stored template versions.
-
-### Part 3 - Angular
-
-- [x] Contract-shaped fixture data and client-side state
-- [x] Engagement list showing pending-update states
-- [x] Readable summary review
-- [x] Apply or Decline action using the reviewed baseline and target versions
-- [x] Two focused tests for summary display and decision state
-
-This excerpt uses hardcoded data, no HTTP calls, and unstyled markup. Actually merging updated template content is outside the exercise.
-
-### Before submission
-
-- [x] Submission notes for assumptions and AI usage
-- [x] Add the finished Angular work to the submission notes
-- [ ] Record approximate time spent and review the "what I would do next" section
-- [x] Check that the design, JSON contract, Java, and Angular examples agree
-- [ ] Be ready to explain and defend the code and AI-assisted decisions
-
-Want the more detailed version? Take a look at [DESIGN.md](DESIGN.md).
+The exercise favors a small, coherent example over a full application. That is the point of this repo.

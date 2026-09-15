@@ -1,20 +1,12 @@
 # Fixtures
 
-This folder has the sample JSON used by the project.
+These JSON files are sample data, not a production database:
 
-- `templates.json` has the templates and their published versions.
-- `engagements.json` has a small record for each engagement and the template version it uses.
-- `template-diff-*.json` shows what changed between two template versions.
-- `template-fragment-audit-ca-v5.json` is a small example of actual template content.
+- `templates.json` lists product templates and their published versions.
+- `engagements.json` holds lightweight metadata for several engagements. Each array item represents one engagement; the file itself is not one giant engagement.
+- `template-diff-*.json` shows raw changes between template versions. Some files compare consecutive versions; others compare an older version directly with the latest one.
+- `template-fragment-audit-ca-v5.json` is a small peek at real template content.
 
-The engagement records are only lightweight metadata. They are not complete engagement files and they are not meant to be a real database format.
+An engagement's `templateVersion` is the baseline for an update check. We compare it with the latest version in `templates.json`. A direct baseline-to-latest diff shows the final effect of several accumulated updates without making users read every intermediate change.
 
-The diff format is custom and simple:
-
-- `add` has a new `value`
-- `replace` has an `oldValue` and a `newValue`
-- `remove` has an `oldValue`
-
-An engagement's `templateVersion` is the version we start from. We compare it with the latest version in `templates.json`.
-
-Some examples skip across multiple versions. That is useful when an engagement is a few updates behind and we only want to show the final difference between its version and the newest one.
+The diff format is simple: `add` has a new `value`; `replace` has `oldValue` and `newValue`; `remove` has `oldValue`. These records are examples, not full customer engagement files.

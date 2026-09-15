@@ -19,9 +19,9 @@ public final class FixtureDiffProvider implements TemplateDiffProvider {
   /**
    * Looks for a fixture named by template ID and version pair.
    *
-   * @param templateId template being compared
+   * @param templateId  template being compared
    * @param fromVersion engagement baseline version
-   * @param toVersion latest template version
+   * @param toVersion   latest template version
    * @return matching diff, or empty when no direct fixture exists
    */
   @Override

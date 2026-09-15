@@ -1,122 +1,77 @@
-# Freshprint - Architecture and Design
+# Freshprint - Design
 
-## Objective
+## The problem
 
-Freshprint shows accounting firms which engagement files were created from an older product-template version. It gives users a readable summary of what changed and lets them choose Apply or Decline.
+An engagement is a firm's working file created from a product template. The template may change during the year, but an existing engagement does not change automatically. Users need a fast list of engagements with pending updates and a plain-language summary before choosing Apply or Decline. Several template versions may pile up before they decide. Actually merging new template content is outside this exercise.
 
-A template is a reusable JSON blueprint containing questions, procedures, checklists, guidance, and rules. An engagement is a customer's working file created from one version of that template. Publishing a new template does not automatically change existing engagements.
-
-The main constraint is that loading one engagement takes about one minute, and loading it is currently required to read its template ID and version. The update list therefore cannot open every engagement. Applying the new template content is outside this exercise.
+The hard constraint is that opening one full engagement takes about a minute, and opening it is currently needed to read its template ID and version. We cannot open hundreds of files to build each list. Product templates, by contrast, are shared across firms and can be retrieved and compared quickly.
 
 ## 1. High-Level Architecture
 
 ```mermaid
 flowchart LR
-    TS[(Template storage)] -->|Template published| TC[Latest template versions]
-    EMS[Engagement management system] -->|Created / loaded / updated| MI[(Engagement metadata index)]
-    MI --> US[Update service]
-    TC --> US
-    TC -->|Precompute summaries| DP
-    TS --> DP[Diff provider]
-    US -->|Cache miss| DP
-    DP --> CS[Change summarizer]
-    CS --> SC[(Summary cache)]
-    SC --> US
-    US -->|JSON API| UI[Angular client]
-    UI -->|Apply / Decline| EMS
+    EM[Engagement management] -->|CreateEngagement / UpdateEngagement| IDX[(Per-firm metadata index)]
+    TD[(Shared template database)] -->|CreateTemplate / UpdateTemplate| TV[Latest versions]
+    TD --> DIFF[Direct diff + readable summary]
+    DIFF --> CACHE[(Shared summary cache)]
+    IDX --> VIEW[Update view]
+    TV --> VIEW
+    CACHE --> VIEW
+    VIEW -->|JSON response| UI[Angular client]
+    UI -->|Versioned Apply / Decline request| EM
 ```
 
-### Components and Data Flow
+Engagement management stays the source of truth. `CreateEngagement` and `UpdateEngagement` copy ID, name, template ID, and recorded version into a **firm-scoped index**. Lists read the index, not full files. Older files can be indexed in the background or during a normal load; until then they are `UNKNOWN`, never falsely `CURRENT`.
 
-The existing **engagement management system** stores and loads complete engagement files and handles Apply or Decline. When an engagement is created, loaded, or successfully updated, a hook sends its ID, name, template ID, and template version to a small **metadata index**.
+`CreateTemplate` initializes latest-version metadata; `UpdateTemplate` advances it and triggers summary precomputation. Java compares each engagement baseline with the latest version, counts actual newer versions, and asks for **one baseline-to-latest diff**. That shows the final effect rather than overwritten intermediate changes. Template lookup is fast; opening an engagement is the one-minute operation.
 
-The index is the key response to the one-minute constraint. The update list reads these small records instead of loading complete engagements. New engagements are indexed when created. Older engagements can be indexed in the background or the next time they are normally opened. An engagement that has not been indexed is shown as `UNKNOWN`, not incorrectly reported as current.
+Java turns raw JSON diffs into grouped, readable changes so every client gets the same interpretation. Angular only displays them. Unknown paths stay visible with a review flag; the current Java fallback may show a raw path, which needs better wording before production.
 
-When a template is published, the template system records its latest version. The **update service** compares each indexed engagement version with that latest version:
+Summaries are **precomputed plus generated on demand**. Updates arrive about once a week per product, so publication can build summaries for older baselines in use. The cache key is template ID, baseline, target, and summary-rule version. A new baseline is computed on a cache miss. The API can say `COMPUTING` while it runs or `UNAVAILABLE` if it fails, without hiding `PENDING`. The cache contains template-derived data, not customer answers.
 
-- Same version: `CURRENT`
-- Older version: `PENDING`
-- Missing engagement metadata: `UNKNOWN`
+Angular owns selection, display, and buttons. A real server validates versions and starts Apply/Decline asynchronously: the UI gets a quick receipt, not a final result. The take-home excerpts have no HTTP connection.
 
-If several versions have accumulated, the service compares the engagement's recorded version directly with the latest version. For example, if a value changed from 5% to 4.5% and later to 4%, the user sees the effective change from 5% to 4%, not two intermediate changes.
+### JSON client/server contract
 
-The raw JSON diff is converted into a readable, structured summary in the **Java backend**. This is a business rule, so keeping it on the server gives every client the same wording, hides internal JSON paths, and makes the result easier to test. The transformation is deterministic. If a path is not recognized, the change is still shown with a general description instead of being silently dropped.
-
-Summaries use a **precompute plus on-demand fallback**. When a template is published, the system precomputes summaries for the distinct older baseline versions currently in use. Each result is stored by template ID, baseline version, target version, and summary-rule version. Requests reuse that result instead of processing the same diff again. If a baseline was not known during precomputation, the summary is generated and stored on demand; the API can return `COMPUTING` until it is ready. The cache contains derived template data, not customer engagement content, and can be rebuilt from the source templates.
-
-The **Angular client** displays the status and server-generated summary, manages the selected engagement and button state, and initiates Apply or Decline. It does not compare versions or interpret raw diffs.
-
-### Client / Server Contract
-
-The real system would use the following JSON contract. For this exercise, Java and Angular are separate excerpts: Java contains the domain logic, while Angular uses hardcoded data shaped like this response.
-
-`GET /api/engagements/template-updates`
+`GET /api/engagements/template-updates` returns a list. This shortened example shows the important fields:
 
 ```json
 {
   "items": [
     {
-      "engagementId": "ENG-1003",
-      "name": "Harbourview Logistics 2026",
+      "engagementId": "ENG-1007",
+      "name": "Bluewater Hospitality 2026",
       "template": {
-        "id": "AUDIT-CA",
-        "displayName": "Canadian Audit Engagement"
+        "id": "REVIEW-CA",
+        "displayName": "Canadian Review Engagement"
       },
       "status": "PENDING",
-      "baselineVersion": 3,
-      "targetVersion": 5,
+      "baselineVersion": 6,
+      "targetVersion": 8,
       "pendingVersionCount": 2,
       "summary": {
         "state": "AVAILABLE",
-        "generatedAt": "2026-08-18T13:04:41Z",
+        "generatedAt": "2026-08-25T13:04:55Z",
         "groups": [
           {
-            "section": "Materiality",
+            "section": "Analytics",
             "changes": [
               {
                 "kind": "CHANGED",
-                "description": "Materiality threshold changed from 5% to 4%.",
+                "description": "Tolerance changed from 0.15 to 0.1.",
                 "reviewRecommended": false
               }
             ]
           }
         ]
       },
-      "freshness": {
-        "state": "FRESH",
-        "checkedAt": "2026-08-18T13:05:00Z"
-      }
+      "freshness": { "state": "FRESH", "checkedAt": "2026-08-25T13:05:00Z" }
     }
   ]
 }
 ```
 
-`summary.state` is `AVAILABLE`, `COMPUTING`, or `UNAVAILABLE`. When it is not available, the response omits `groups` and includes a reason. `freshness.state` is `FRESH` or `STALE`, with the last check time. These explicit states avoid using `null` for several different meanings.
-
-`POST /api/engagements/ENG-1003/template-update-decisions`
-
-```json
-{
-  "decision": "APPLY",
-  "expectedBaselineVersion": 3,
-  "targetVersion": 5
-}
-```
-
-```json
-{
-  "operationId": "OP-7241",
-  "status": "ACCEPTED"
-}
-```
-
-The versions confirm exactly what the user reviewed. If a newer version appears before the decision is processed, the server returns `409 Conflict` and asks the client to refresh. Apply may be asynchronous because loading the engagement is slow. `ACCEPTED` means the operation started, not that the template content was already merged.
-
-### Future Contract Implementation
-
-The examples above are the intended wire contract, not Java domain objects serialized directly. A future API adapter would build each response item from the engagement metadata index, `EngagementUpdateEvaluator`, template metadata, and `PendingUpdateSummaryService`. The index supplies `freshness.checkedAt` and whether it is `FRESH` or `STALE`; the evaluator does not know about freshness. The summary service supplies the readable groups, not raw JSON paths for Angular to interpret.
-
-For a pending engagement, `summary` is always present. It has one of three shapes: `AVAILABLE` with `generatedAt` and readable `groups`, `COMPUTING` with `reason`, or `UNAVAILABLE` with `reason`. For example:
+`summary` for a pending item is one of `AVAILABLE` (with time and groups), `COMPUTING` (with a reason), or `UNAVAILABLE` (with a reason). The two latter shapes are:
 
 ```json
 { "state": "COMPUTING", "reason": "SUMMARY_IN_PROGRESS" }
@@ -126,57 +81,66 @@ For a pending engagement, `summary` is always present. It has one of three shape
 { "state": "UNAVAILABLE", "reason": "TEMPLATE_DIFF_UNAVAILABLE" }
 ```
 
-`generatedAt` and `groups` belong only to `AVAILABLE`, as shown in the main GET example. `reason` is required for `COMPUTING` and `UNAVAILABLE`; `reviewRecommended` is a boolean on every change. `CURRENT` has no pending summary. An `UNKNOWN` item has no pending summary and includes a `statusReason` such as `TEMPLATE_METADATA_UNAVAILABLE`. `targetVersion` and `pendingVersionCount` can be zero for `UNKNOWN`; Angular must not treat zero as a real template version. These are the field rules I would make exact in a JSON Schema or OpenAPI definition before wiring the two excerpts together. The current Angular model would then make `COMPUTING.reason` and `reviewRecommended` required and add `statusReason`.
+`CURRENT` has no pending summary. `UNKNOWN` has a `statusReason`; the Java excerpt can return it when template metadata is missing or inconsistent. A truly unindexed file would also lack template/version fields, so a production schema should allow those fields to be absent for that `UNKNOWN` case. The Angular fixture demonstrates the simpler known-ID case, not full backfill behavior. `FRESH` or `STALE` plus `checkedAt` tells the client how recently the indexed metadata was checked; the index/API layer supplies this, not the Java evaluator. Technical reason codes stay in the contract while the UI uses plain-language messages.
 
-Angular would read this response through a future HTTP gateway instead of its hardcoded fixture. For a decision, it would send the selected engagement ID in the URL and the reviewed `decision`, `expectedBaselineVersion`, and `targetVersion` in the body. The server would re-check those versions before returning `ACCEPTED`. If either reviewed version is stale, the response is `409 Conflict`:
+`POST /api/engagements/{engagementId}/template-update-decisions` sends the exact versions the user reviewed:
 
 ```json
-{ "code": "VERSION_CONFLICT", "currentBaselineVersion": 3, "currentTargetVersion": 6 }
+{ "decision": "APPLY", "expectedBaselineVersion": 6, "targetVersion": 8 }
 ```
 
-Angular would refresh the item and require a new review; it would not retry the old request blindly. Neither excerpt implements this HTTP adapter or the actual template merge, as requested by the exercise.
+`DECLINE` uses the same body shape. Either action returns a quick `{ "operationId": "OP-7241", "status": "ACCEPTED" }` receipt while processing continues asynchronously; this does **not** mean the decision is complete or the template was already merged. If the recorded baseline or latest target changed during review, the server returns `409 Conflict`:
+
+```json
+{
+  "code": "VERSION_CONFLICT",
+  "currentBaselineVersion": 6,
+  "currentTargetVersion": 9
+}
+```
+
+Angular then refreshes and asks for a new review rather than replaying the old decision. Before building HTTP adapters, I would put these conditional field rules in JSON Schema or OpenAPI and test both sides against it. The current Java records are domain results, not serialized API DTOs; the Angular types and fixture follow the proposed response for the excerpt.
+
+A real app could later read `GET /api/template-update-operations/{operationId}` to learn whether an accepted decision is `RUNNING`, `SUCCEEDED`, or `FAILED`. The take-home Angular excerpt stops at the quick `ACCEPTED` receipt and does not wait for completion.
 
 ## 2. Implementation Plan
 
-1. Create a plain Java module with the engagement, template, diff, summary, and pending-state models. Add interfaces for finding the latest template and comparing two versions.
-2. Implement the pending-update evaluator and backend change summarizer. Add two or three focused JUnit tests. Do not add Spring, controllers, persistence, or a runnable server.
-3. Create an Angular application with contract-matching models, hardcoded fixtures, a small state service, an engagement list, a summary view, and Apply/Decline actions. Do not make HTTP calls.
-4. In a production implementation, add the metadata index, hooks, API, background indexing, and publication-triggered summary precomputation. Use on-demand generation for cache misses. The Angular fixture service could then be replaced with an HTTP service.
+For the exercise: plain Java update and summary logic with three tests; an Angular list, review view, decision state, hardcoded fixture, and two tests. No HTTP, persistence, CSS, or template merge.
+
+For production: connect the four hooks to durable handlers, backfill old files off the list path, precompute/cache summaries, add the JSON API, and replace Angular's fixture gateway with HTTP. Engagement management records the eventual decision outcome.
 
 ## 3. Testing Strategy
 
-The Java tests will cover an engagement that is current, an engagement several versions behind, and conversion of known and unknown diff paths into readable summaries. The Angular tests will check that statuses and summaries render correctly and that Apply sends the reviewed baseline and target versions without allowing duplicate clicks.
+Java tests cover update states, accumulated versions, direct diffs, and readable or unavailable summaries. Angular tests cover display, disabled decisions without a ready summary, versioned Apply/Decline requests, and duplicate clicks.
 
-In production, I would also test delayed or duplicate events, firm data isolation, a new template published while a user is reviewing, and recovery when indexed metadata becomes stale.
+Production tests would cover hook retries, backfill, firm isolation, cache misses, stale decisions, and failed async operations. A list test must prove it never opens full engagements.
 
 ## 4. Evaluation and Observability
 
-The main success measure is how quickly a published template update appears in the engagement list without loading engagement files. I would track:
-
-- List request latency and errors
-- Time from template publication to visible pending status
-- Number and age of `UNKNOWN` or stale engagement records
-- Summary generation time, failures, and cache hit rate
-- Apply/Decline successes, failures, and version conflicts
-
-Logs should include organization, engagement, template, baseline, target, operation, and correlation IDs, but not customer answers or complete engagement content. An audit record should capture who reviewed which versions, the decision, its time, and its result.
+I would track list latency, publish-to-visible-update time, `UNKNOWN`/`STALE` age, summary cache hits/failures, and decision outcomes/conflicts. Audit records need reviewer, baseline, target, choice, time, and outcome. Logs need IDs and versions, never customer answers or full file content.
 
 ## 5. Failure Modes and Tradeoffs
 
-- **Engagement metadata is missing:** return `UNKNOWN` and index it in the background or during a normal load. The list stays fast but may temporarily be incomplete.
-- **A hook is delayed or missed:** use idempotent handlers and a periodic background check to repair stale metadata. This accepts short-lived eventual consistency.
-- **A summary is not ready or fails:** keep the engagement `PENDING` and return `COMPUTING` or `UNAVAILABLE`. A summary problem must not hide the update itself.
-- **A summary was not precomputed:** generate and store it on demand. This keeps publication work bounded while supporting older or newly indexed baselines.
-- **A new version appears during review:** validate the baseline and target in the decision request and require a refresh when they are stale.
-- **Several versions accumulated:** prefer one direct baseline-to-latest diff because consecutive changes may overwrite each other.
-- **Apply is slow or fails:** represent it as an asynchronous operation. The actual merge, default values, draft migration, and rollback are outside this exercise.
-- **Backend summary:** this requires server-side mapping rules, but it avoids duplicating business interpretation in Angular and other future clients.
+These are proposed production responses; the take-home excerpts implement the core states but not the event system or HTTP calls.
+
+| What can happen, and why | Backend response | Frontend response / tradeoff |
+| --- | --- | --- |
+| A hook is delayed, duplicated, or lost during event delivery. | Retry, deduplicate, and reconcile; index may be `STALE`/`UNKNOWN` meanwhile. | Show uncertainty, not `CURRENT`. Fast lists trade immediate consistency for speed. |
+| An old file predates the hooks, so its version is not indexed. | Backfill off the list path; never open a one-minute file during a request. | Show `UNKNOWN` until indexed. First-time completeness takes longer. |
+| A publish event beats summary precomputation, or diffing fails. | Keep `PENDING`; return `COMPUTING` or `UNAVAILABLE`. | Show that state and disable actions under this demo's safety rule. The update remains visible. |
+| A diff has wrong versions or an unfamiliar JSON path. | Reject mismatches; keep unknown paths with `reviewRecommended`. | Show unavailable/review wording. Traceability beats a polished but incorrect summary. |
+| Template or engagement versions change during review. | Recheck versions; return `409 Conflict`. | Refresh and re-review. Extra work prevents stale decisions. |
+| Apply/Decline fails after `ACCEPTED` because processing runs later. | Track final outcome; update the index only after successful Apply. | A future UI shows pending/failure, not false completion. Fast receipts defer final certainty. |
+
+For several accumulated versions, the backend uses one baseline-to-latest diff. This shows the effective final change, not every intermediate edit; a separate history view could show the chronology. The targeted Java code assumes no earlier decisions. A production decision record would also avoid presenting an already-declined version as a new choice until another update arrives.
 
 ## Assumptions
 
-- Template versions increase in order within a template.
-- A direct JSON diff can be generated between any two versions of the same template.
-- Template publication and engagement actions can trigger hooks.
-- The engagement system remains the source of truth; the metadata index is only a fast copy of the fields needed for this feature.
-- The targeted implementation assumes no previous Apply/Decline history and uses the engagement's recorded template version as its baseline.
-- Applying template content, authentication, filtering, search, bulk actions, and styling are outside scope.
+- The recorded engagement version is the baseline; targeted Java has no decision history. Published version numbers increase but may skip values.
+- The template system can quickly compare any two versions of the same template and produce a direct JSON diff.
+- Four durable hooks exist: `CreateTemplate` initializes template metadata; `UpdateTemplate` publishes a version and precomputes summaries; `CreateEngagement` indexes the initial template/version; `UpdateEngagement` refreshes it after successful Apply. Handlers retry, deduplicate, and reconcile missed events.
+- The one-minute limit is for loading **engagements**, not templates. Lists use cached engagement metadata; summaries use cached or newly generated template data.
+- Engagement IDs/names can be listed without a full load. Old files are indexed in the background or during normal loads; until then they show `UNKNOWN`.
+- Full files stay in customer-specific storage. The firm-scoped index is a copy; shared template data/caches hold no customer answers.
+- Apply/Decline return a quick `ACCEPTED` receipt and finish asynchronously. The UI does not wait for completion; indexed metadata changes only after successful Apply.
+- Java and Angular are separate, no-HTTP excerpts. Requiring a ready summary before a decision is my Angular demo safety choice, not a prompt requirement.

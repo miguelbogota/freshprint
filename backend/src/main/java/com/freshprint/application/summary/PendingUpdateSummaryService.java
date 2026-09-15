@@ -18,7 +18,7 @@ public final class PendingUpdateSummaryService {
   /**
    * Creates a service backed by a diff provider and summary generator.
    *
-   * @param diffProvider source of baseline-to-target template diffs
+   * @param diffProvider     source of baseline-to-target template diffs
    * @param summaryGenerator converter for raw template changes
    */
   public PendingUpdateSummaryService(

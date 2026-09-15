@@ -13,9 +13,9 @@ public interface TemplateDiffProvider {
   /**
    * Finds the effective diff from an engagement baseline to a newer target.
    *
-   * @param templateId template being compared
+   * @param templateId  template being compared
    * @param fromVersion baseline version
-   * @param toVersion target version
+   * @param toVersion   target version
    * @return effective diff, or empty when it is not available
    */
   Optional<TemplateDiff> findDiff(String templateId, int fromVersion, int toVersion);
