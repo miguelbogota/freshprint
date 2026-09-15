@@ -2,7 +2,7 @@
 
 This is the Java side of Freshprint.
 
-It has the main business models, the update checker, the change-summary strategies, and a few focused tests. There is no Spring app, API, database, or server to start. That is intentional: this part is all about the business logic.
+It has the main business models, the update checker, a small change-summary converter, and a few focused tests. There is no Spring app, API, database, or server to start. That is intentional: this part is all about the business logic.
 
 ## Folders
 
@@ -18,7 +18,7 @@ src/main/java/com/freshprint/
     └── summary/      Turns raw changes into simple summaries
 ```
 
-The summary code uses small strategies for question changes, general section changes, and anything it does not recognize. The fallback keeps unknown changes visible and marks them for review.
+The summary code is one class with simple rules for question changes, other section changes, and unknown paths. Unknown changes stay visible and are marked for review.
 
 ## What happens
 
@@ -26,7 +26,7 @@ The summary code uses small strategies for question changes, general section cha
 2. It returns `CURRENT`, `PENDING`, or `UNKNOWN`.
 3. A pending result includes the real number of published versions after the engagement's baseline.
 4. `PendingUpdateSummaryService` asks `TemplateDiffProvider` for one direct baseline-to-latest diff.
-5. `ChangeSummaryGenerator` runs each raw change through the first strategy that understands it.
+5. `ChangeSummaryGenerator` turns each raw change into a short description.
 6. The final changes are grouped by section and returned as `AVAILABLE`.
 7. If the diff cannot be found, the update stays pending and the summary is `UNAVAILABLE`.
 
@@ -35,16 +35,16 @@ The summary code uses small strategies for question changes, general section cha
 ## Why it's built this way
 
 - Records hold immutable business data. Classes perform work.
-- Sealed interfaces keep the possible update and summary states explicit.
+- Update statuses and summary availability are explicit, so missing information is not mistaken for a current file.
 - Ports keep the logic independent from JSON, databases, and caches.
-- The Strategy pattern lets us add better wording for new template areas without changing the generator.
-- The fallback strategy makes sure an unknown path is never silently dropped.
+- A few direct path checks are easier to explain here than a Strategy pattern.
+- An unknown path is never silently dropped.
 - Published versions are stored as a list instead of assuming version numbers are always consecutive.
 - The direct baseline-to-latest diff handles several accumulated updates without showing noisy intermediate changes.
 - `Clock` is injected so generated timestamps stay predictable in tests.
 - Jackson is test-only. Production code stays plain Java.
 
-The tests load the shared files in `../fixtures`, so they exercise the same sample data used by the rest of the project.
+The tests load the shared files in `../fixtures`, so they exercise the same sample data used by the rest of the project. `FixtureDiffProvider` picks a JSON file using the template ID and the engagement-to-latest version pair. If that direct file does not exist, it returns no diff and the summary reports `UNAVAILABLE`. This provider is test-only; a real app could use the same port with a cache or database.
 
 ## Run the tests
 

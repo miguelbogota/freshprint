@@ -1,12 +1,10 @@
 package com.freshprint.application.summary;
 
-import com.freshprint.application.summary.strategy.ChangeSummaryStrategy;
-import com.freshprint.application.summary.strategy.FallbackChangeSummaryStrategy;
-import com.freshprint.application.summary.strategy.QuestionChangeSummaryStrategy;
-import com.freshprint.application.summary.strategy.SectionChangeSummaryStrategy;
 import com.freshprint.domain.summary.ChangeSummary;
 import com.freshprint.domain.summary.SummaryChange;
+import com.freshprint.domain.summary.SummaryChangeKind;
 import com.freshprint.domain.summary.SummaryGroup;
+import com.freshprint.domain.template.TemplateChange;
 import com.freshprint.domain.template.TemplateDiff;
 
 import java.time.Clock;
@@ -17,74 +15,90 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * Turns a raw template diff into changes that a user can review.
- */
+/** Converts a raw diff into a short summary for a non-technical user. */
 public final class ChangeSummaryGenerator {
 
-  private final List<ChangeSummaryStrategy> strategies;
   private final Clock clock;
 
   /**
-   * Creates a generator with ordered strategies and a clock.
+   * Creates a generator with a clock for predictable timestamps.
    *
-   * <br>
-   * The first strategy that supports a change is used.
-   *
-   * @param strategies ordered summary strategies, including a fallback
-   * @param clock      clock used to record when a summary was generated
+   * @param clock source of the summary timestamp
    */
-  public ChangeSummaryGenerator(List<ChangeSummaryStrategy> strategies, Clock clock) {
-    this.strategies = List.copyOf(strategies);
-    this.clock = Objects.requireNonNull(clock, "clock must not be null");
-
-    if (this.strategies.isEmpty()) {
-      throw new IllegalArgumentException("strategies must not be empty");
-    }
+  public ChangeSummaryGenerator(Clock clock) {
+    this.clock = Objects.requireNonNull(clock);
   }
 
   /**
-   * Creates a generator with the standard strategies in the correct order.
+   * Groups and describes every change in a baseline-to-latest diff.
    *
-   * @param clock clock used to record when a summary was generated
-   * @return configured summary generator
-   */
-  public static ChangeSummaryGenerator standard(Clock clock) {
-    return new ChangeSummaryGenerator(
-        List.of(
-            new QuestionChangeSummaryStrategy(),
-            new SectionChangeSummaryStrategy(),
-            new FallbackChangeSummaryStrategy()),
-        clock);
-  }
-
-  /**
-   * Summarizes every raw change and groups the results by template section.
-   *
-   * @param diff raw effective diff from the baseline to the latest version
-   * @return generated human-readable summary
+   * @param diff effective template diff
+   * @return readable summary
    */
   public ChangeSummary generate(TemplateDiff diff) {
-    Objects.requireNonNull(diff, "diff must not be null");
-
-    Map<String, List<SummaryChange>> changesBySection = new LinkedHashMap<>();
+    Objects.requireNonNull(diff);
+    Map<String, List<SummaryChange>> sections = new LinkedHashMap<>();
     for (var change : diff.changes()) {
-      var result = strategies.stream()
-          .filter(strategy -> strategy.supports(change))
-          .findFirst()
-          .orElseThrow(() -> new IllegalStateException(
-              "No summary strategy supports path " + change.path()))
-          .summarize(change);
-
-      changesBySection
-          .computeIfAbsent(result.section(), ignored -> new ArrayList<>())
-          .add(result.change());
+      var path = change.path();
+      var parts = path.split("/");
+      var known = parts.length > 2 && path.startsWith("/sections/");
+      var section = known ? humanize(parts[2]) : "Other changes";
+      var subject = path.contains("/questions/")
+          ? "question"
+          : humanize(path.substring(path.lastIndexOf('/') + 1));
+      var description = switch (change) {
+        case TemplateChange.Added added ->
+          "Added " + subject + ": " + display(added.value()) + ".";
+        case TemplateChange.Replaced replaced ->
+          subject + " changed from " + display(replaced.oldValue())
+              + " to " + display(replaced.newValue()) + ".";
+        case TemplateChange.Removed removed ->
+          "Removed " + subject + ": " + display(removed.oldValue()) + ".";
+      };
+      if (!known) {
+        description = "Template content changed at " + path + ".";
+      }
+      var kind = switch (change) {
+        case TemplateChange.Added _ -> SummaryChangeKind.ADDED;
+        case TemplateChange.Replaced _ -> SummaryChangeKind.CHANGED;
+        case TemplateChange.Removed _ -> SummaryChangeKind.REMOVED;
+      };
+      sections.computeIfAbsent(section, ignored -> new ArrayList<>())
+          .add(new SummaryChange(kind, description, !known));
     }
-
-    var groups = changesBySection.entrySet().stream()
+    var groups = sections.entrySet().stream()
         .map(entry -> new SummaryGroup(entry.getKey(), entry.getValue()))
         .toList();
-
     return new ChangeSummary(Instant.now(clock), groups);
+  }
+
+  /**
+   * Turns a JSON value into a compact label or scalar.
+   *
+   * @param value raw diff value
+   * @return readable value
+   */
+  private static String display(Object value) {
+    if (value instanceof Map<?, ?> map && map.get("label") != null) {
+      return "\"" + map.get("label") + "\"";
+    }
+    if (value instanceof String text) {
+      return "\"" + text + "\"";
+    }
+    return String.valueOf(value);
+  }
+
+  /**
+   * Replaces common JSON-name separators with spaces.
+   *
+   * @param name path segment
+   * @return readable name
+   */
+  private static String humanize(String name) {
+    var words = name.replaceAll("([a-z])([A-Z])", "$1 $2")
+        .replace('-', ' ').replace('_', ' ').toLowerCase();
+    return words.isEmpty() ? "content"
+        : Character.toUpperCase(words.charAt(0))
+            + words.substring(1);
   }
 }

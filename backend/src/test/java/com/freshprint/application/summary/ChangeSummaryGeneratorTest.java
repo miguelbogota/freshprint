@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Verifies strategy selection and grouping for readable change summaries.
+ * Verifies grouping and wording for readable change summaries.
  */
 class ChangeSummaryGeneratorTest {
 
@@ -29,7 +29,7 @@ class ChangeSummaryGeneratorTest {
    */
   @Test
   void summarizesKnownAndUnknownChanges() throws IOException {
-    var generator = ChangeSummaryGenerator.standard(
+    var generator = new ChangeSummaryGenerator(
         Clock.fixed(GENERATED_AT, ZoneOffset.UTC));
     var diff = FixtureLoader.diff("template-diff-review-ca-v6-v8.json");
 
@@ -47,7 +47,7 @@ class ChangeSummaryGeneratorTest {
             summary.groups().stream().map(group -> group.section()).toList()),
         () -> assertEquals(SummaryChangeKind.ADDED, question.kind()),
         () -> assertEquals(
-            "Added question \"Describe any events after the reporting date that may require adjustment or disclosure.\".",
+            "Added question: \"Describe any events after the reporting date that may require adjustment or disclosure.\".",
             question.description()),
         () -> assertEquals(
             "Tolerance changed from 0.15 to 0.1.",

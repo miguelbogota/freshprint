@@ -25,7 +25,7 @@ I used ChatGPT/Codex as a design and implementation assistant. So far, it has he
 - Identify edge cases such as accumulated versions, unavailable summaries, stale decisions, missed events, and existing unindexed engagements.
 - Keep the design aligned with the limited Java and Angular excerpts requested by the exercise.
 
-During the Java implementation, I also used AI to discuss package boundaries, compare records with service classes, introduce the summary Strategy pattern, create fixture-backed test cases, and review the finished branch. I verified the generated code with Maven, Javadoc checks, JSON parsing, and a manual review of the domain rules.
+During the Java implementation, I also used AI to discuss package boundaries, compare records with service classes, explore and then remove the summary Strategy pattern, create fixture-backed test cases, and review the finished branch. I verified the generated code with Maven, Javadoc checks, JSON parsing, and a manual review of the domain rules.
 
 ### Where I corrected, rewrote, or ignored AI output
 
@@ -39,7 +39,8 @@ I also reviewed and changed several design choices during the discussion:
 - I chose backend transformation of raw diffs because it is shared business interpretation, while Angular remains responsible for presentation and interaction.
 - I selected a precompute-plus-on-demand strategy for summaries rather than recalculating them on every request.
 - I asked for the original package structure to be simplified and later added a `domain` parent once its purpose was clear.
-- I chose regular classes for services and strategies, while keeping immutable business values as records.
+- I chose regular classes for services, while keeping immutable business values as records.
+- I removed the Strategy pattern because three small path checks were clearer as one converter for this exercise.
 - I changed the pending-version calculation from numeric subtraction to counting the actual published versions. This avoids assuming version numbers are consecutive.
 - I kept Jackson in the test scope and used a test fixture loader instead of adding JSON concerns to the production domain model.
 - I removed or postponed speculative features such as draft template migrations and detailed merge behavior because applying template content is outside scope.

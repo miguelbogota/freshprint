@@ -70,24 +70,49 @@ cd backend
 ./mvnw clean test
 ```
 
-## Where are we now?
+## Take-home checklist
 
-Done so far:
+The exercise asks for a small design and two code excerpts, not a running service.
 
-- The system design and JSON contract
-- Sample data
-- The Java project
-- The main domain models
-- The service that checks for pending updates
-- The strategies that turn raw changes into simple summaries
-- The complete baseline-to-latest summary flow
-- A few focused tests
+### Part 1 - design
 
-Still to come:
+- [x] Short design covering architecture and the client/server boundary
+- [x] Implementation plan and testing strategy
+- [x] Evaluation, observability, failures, and tradeoffs
+- [x] JSON API contract with request/response shapes, freshness, and unavailable or computing summaries
+- [x] Explain why raw diffs become readable summaries in Java
+- [x] Architecture diagram
 
-- The Angular screen and state
-- Apply and Decline actions in the Angular example
+These are in [DESIGN.md](DESIGN.md). The metadata index, hooks, summary cache, and HTTP API are production ideas in the design; they are not implemented here.
 
-This project does not actually merge a new template into an engagement. That part is outside the scope of the exercise.
+### Part 2 - Java
+
+- [x] Plain Java domain models and interfaces, with no framework or HTTP layer
+- [x] Evaluate `CURRENT`, `PENDING`, and `UNKNOWN` from the engagement's recorded template version
+- [x] Count actual published versions when several updates have accumulated
+- [x] Request one direct baseline-to-latest template diff and verify its versions
+- [x] Turn raw diff changes into readable, grouped summaries on the server
+- [x] Represent available, computing, and unavailable summary states
+- [x] Three focused fixture-backed tests
+
+The fixture provider selects a JSON diff by template and version pair. A missing direct fixture returns an unavailable summary; in the proposed production system, the diff would be generated from stored template versions.
+
+### Part 3 - Angular
+
+- [ ] Contract-shaped fixture data and client-side state
+- [ ] Engagement list showing pending-update states
+- [ ] Readable summary review
+- [ ] Apply or Decline action using the reviewed baseline and target versions
+- [ ] One or two focused tests if they demonstrate an important interaction
+
+This excerpt should use hardcoded data, no HTTP calls, and unstyled markup. Actually merging updated template content is outside the exercise.
+
+### Before submission
+
+- [x] Submission notes for assumptions and AI usage
+- [ ] Add the finished Angular work to the submission notes
+- [ ] Record approximate time spent and review the "what I would do next" section
+- [ ] Check that the design, JSON contract, Java, and Angular examples agree
+- [ ] Be ready to explain and defend the code and AI-assisted decisions
 
 Want the more detailed version? Take a look at [DESIGN.md](DESIGN.md).
