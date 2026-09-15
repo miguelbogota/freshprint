@@ -1,9 +1,9 @@
 package com.freshprint.application.summary;
 
 import com.freshprint.application.update.EngagementUpdateEvaluator;
-import com.freshprint.domain.engagement.EngagementUpdateState;
 import com.freshprint.domain.summary.ChangeSummaryResult;
 import com.freshprint.domain.summary.SummaryStatus;
+import com.freshprint.testfixture.FixtureDiffProvider;
 import com.freshprint.testfixture.FixtureLoader;
 import org.junit.jupiter.api.Test;
 
@@ -29,20 +29,23 @@ class PendingUpdateSummaryServiceTest {
    */
   @Test
   void summarizesAccumulatedVersionsAndHandlesMissingDiff() throws IOException {
-    var template = FixtureLoader.template("REVIEW-CA");
-    var evaluator = new EngagementUpdateEvaluator(templateId -> Optional.of(template));
-    var pending = assertInstanceOf(
-        EngagementUpdateState.Pending.class,
-        evaluator.evaluate(FixtureLoader.engagement("ENG-1007")));
-    var diff = FixtureLoader.diff("template-diff-review-ca-v6-v8.json");
-    var generator = ChangeSummaryGenerator.standard(
+    var reviewTemplate = FixtureLoader.template("REVIEW-CA");
+    var auditTemplate = FixtureLoader.template("AUDIT-CA");
+
+    var reviewEvaluator = new EngagementUpdateEvaluator(templateId -> Optional.of(reviewTemplate));
+    var auditEvaluator = new EngagementUpdateEvaluator(
+        templateId -> Optional.of(auditTemplate));
+
+    var reviewPending = reviewEvaluator.evaluate(FixtureLoader.engagement("ENG-1007"));
+    var oneVersionBehind = reviewEvaluator.evaluate(FixtureLoader.engagement("ENG-1006"));
+    var auditPending = auditEvaluator.evaluate(FixtureLoader.engagement("ENG-1003"));
+
+    var generator = new ChangeSummaryGenerator(
         Clock.fixed(Instant.parse("2026-08-25T13:04:55Z"), ZoneOffset.UTC));
-    var availableService = new PendingUpdateSummaryService(
-        (templateId, fromVersion, toVersion) -> Optional.of(diff),
-        generator);
-    var unavailableService = new PendingUpdateSummaryService(
-        (templateId, fromVersion, toVersion) -> Optional.empty(),
-        generator);
+    var diffProvider = new FixtureDiffProvider();
+
+    var service = new PendingUpdateSummaryService(diffProvider, generator);
+
     var mismatchedDiff = FixtureLoader.diff("template-diff-review-ca-v7-v8.json");
     var mismatchedService = new PendingUpdateSummaryService(
         (templateId, fromVersion, toVersion) -> Optional.of(mismatchedDiff),
@@ -50,18 +53,22 @@ class PendingUpdateSummaryServiceTest {
 
     var available = assertInstanceOf(
         ChangeSummaryResult.Available.class,
-        availableService.summarize(pending));
+        service.summarize(reviewPending));
+    var versionSevenSummary = assertInstanceOf(
+        ChangeSummaryResult.Available.class,
+        service.summarize(oneVersionBehind));
     var unavailable = assertInstanceOf(
         ChangeSummaryResult.Unavailable.class,
-        unavailableService.summarize(pending));
+        service.summarize(auditPending));
     var mismatched = assertInstanceOf(
         ChangeSummaryResult.Unavailable.class,
-        mismatchedService.summarize(pending));
+        mismatchedService.summarize(reviewPending));
 
     assertAll(
-        () -> assertEquals(2, pending.pendingVersionCount()),
+        () -> assertEquals(2, reviewPending.pendingVersionCount()),
         () -> assertEquals(SummaryStatus.AVAILABLE, available.status()),
         () -> assertEquals(4, available.summary().groups().size()),
+        () -> assertEquals(3, versionSevenSummary.summary().groups().size()),
         () -> assertEquals(SummaryStatus.UNAVAILABLE, unavailable.status()),
         () -> assertEquals("TEMPLATE_DIFF_UNAVAILABLE", unavailable.reason()),
         () -> assertEquals("TEMPLATE_DIFF_MISMATCH", mismatched.reason()));

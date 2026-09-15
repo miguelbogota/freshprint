@@ -2,6 +2,7 @@ package com.freshprint.application.summary;
 
 import com.freshprint.application.port.TemplateDiffProvider;
 import com.freshprint.domain.engagement.EngagementUpdateState;
+import com.freshprint.domain.engagement.UpdateStatus;
 import com.freshprint.domain.summary.ChangeSummaryResult;
 
 import java.util.Objects;
@@ -33,18 +34,20 @@ public final class PendingUpdateSummaryService {
    * Loads and summarizes the direct diff from the engagement baseline to the
    * latest template version.
    *
-   * @param pending pending engagement update
+   * @param pending pending engagement update result
    * @return available summary or an explicit unavailable result
    */
-  public ChangeSummaryResult summarize(EngagementUpdateState.Pending pending) {
+  public ChangeSummaryResult summarize(EngagementUpdateState pending) {
     Objects.requireNonNull(pending, "pending must not be null");
+    if (pending.status() != UpdateStatus.PENDING) {
+      throw new IllegalArgumentException("Only pending updates have a summary");
+    }
 
     var engagement = pending.engagement();
-    var template = pending.template();
     var diff = diffProvider.findDiff(
         engagement.templateId(),
         engagement.templateVersion(),
-        template.latestVersion());
+        pending.targetVersion());
 
     if (diff.isEmpty()) {
       return new ChangeSummaryResult.Unavailable("TEMPLATE_DIFF_UNAVAILABLE");
@@ -53,7 +56,7 @@ public final class PendingUpdateSummaryService {
     var templateDiff = diff.get();
     if (!templateDiff.templateId().equals(engagement.templateId())
         || templateDiff.fromVersion() != engagement.templateVersion()
-        || templateDiff.toVersion() != template.latestVersion()) {
+        || templateDiff.toVersion() != pending.targetVersion()) {
       return new ChangeSummaryResult.Unavailable("TEMPLATE_DIFF_MISMATCH");
     }
 

@@ -16,13 +16,6 @@ public sealed interface TemplateChange
   String path();
 
   /**
-   * Returns the operation represented by this change.
-   *
-   * @return add, replace, or remove
-   */
-  ChangeOperation operation();
-
-  /**
    * A value added by the target template version.
    *
    * @param path  location of the new value
@@ -37,15 +30,6 @@ public sealed interface TemplateChange
       path = requirePath(path);
     }
 
-    /**
-     * Identifies this change as an add operation.
-     *
-     * @return {@link ChangeOperation#ADD}
-     */
-    @Override
-    public ChangeOperation operation() {
-      return ChangeOperation.ADD;
-    }
   }
 
   /**
@@ -64,15 +48,6 @@ public sealed interface TemplateChange
       path = requirePath(path);
     }
 
-    /**
-     * Identifies this change as a replace operation.
-     *
-     * @return {@link ChangeOperation#REPLACE}
-     */
-    @Override
-    public ChangeOperation operation() {
-      return ChangeOperation.REPLACE;
-    }
   }
 
   /**
@@ -90,15 +65,6 @@ public sealed interface TemplateChange
       path = requirePath(path);
     }
 
-    /**
-     * Identifies this change as a remove operation.
-     *
-     * @return {@link ChangeOperation#REMOVE}
-     */
-    @Override
-    public ChangeOperation operation() {
-      return ChangeOperation.REMOVE;
-    }
   }
 
   /**

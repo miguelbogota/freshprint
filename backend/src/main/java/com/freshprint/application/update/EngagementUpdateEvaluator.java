@@ -3,6 +3,7 @@ package com.freshprint.application.update;
 import com.freshprint.application.port.TemplateCatalog;
 import com.freshprint.domain.engagement.EngagementBaseline;
 import com.freshprint.domain.engagement.EngagementUpdateState;
+import com.freshprint.domain.engagement.UpdateStatus;
 
 import java.util.Objects;
 
@@ -35,31 +36,31 @@ public final class EngagementUpdateEvaluator {
 
     var latestTemplate = templateCatalog.findLatest(engagement.templateId());
     if (latestTemplate.isEmpty()) {
-      return new EngagementUpdateState.Unknown(
-          engagement.engagementId(),
-          "TEMPLATE_METADATA_UNAVAILABLE");
+      return new EngagementUpdateState(
+          engagement, UpdateStatus.UNKNOWN, 0, 0, "TEMPLATE_METADATA_UNAVAILABLE");
     }
 
     var template = latestTemplate.get();
     if (engagement.templateVersion() > template.latestVersion()) {
-      return new EngagementUpdateState.Unknown(
-          engagement.engagementId(),
-          "ENGAGEMENT_VERSION_AHEAD_OF_CATALOG");
+      return new EngagementUpdateState(
+          engagement, UpdateStatus.UNKNOWN, 0, 0, "ENGAGEMENT_VERSION_AHEAD_OF_CATALOG");
     }
 
     if (!template.hasVersion(engagement.templateVersion())) {
-      return new EngagementUpdateState.Unknown(
-          engagement.engagementId(),
-          "ENGAGEMENT_VERSION_NOT_FOUND");
+      return new EngagementUpdateState(
+          engagement, UpdateStatus.UNKNOWN, 0, 0, "ENGAGEMENT_VERSION_NOT_FOUND");
     }
 
     if (engagement.templateVersion() == template.latestVersion()) {
-      return new EngagementUpdateState.Current(engagement, template);
+      return new EngagementUpdateState(
+          engagement, UpdateStatus.CURRENT, template.latestVersion(), 0, null);
     }
 
-    return new EngagementUpdateState.Pending(
+    return new EngagementUpdateState(
         engagement,
-        template,
-        template.countVersionsAfter(engagement.templateVersion()));
+        UpdateStatus.PENDING,
+        template.latestVersion(),
+        template.countVersionsAfter(engagement.templateVersion()),
+        null);
   }
 }

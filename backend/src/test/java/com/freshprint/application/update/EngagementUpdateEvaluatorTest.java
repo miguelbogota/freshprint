@@ -1,7 +1,6 @@
 package com.freshprint.application.update;
 
 import com.freshprint.domain.engagement.EngagementBaseline;
-import com.freshprint.domain.engagement.EngagementUpdateState;
 import com.freshprint.domain.engagement.UpdateStatus;
 import com.freshprint.domain.template.TemplateMetadata;
 import com.freshprint.testfixture.FixtureLoader;
@@ -14,7 +13,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 /**
  * Verifies engagement update evaluation against the latest template metadata.
@@ -49,24 +47,18 @@ class EngagementUpdateEvaluatorTest {
         List.of(3, 5));
     var skippedVersionEvaluator = new EngagementUpdateEvaluator(
         templateId -> Optional.of(skippedVersionTemplate));
-    var skippedVersionPending = assertInstanceOf(
-        EngagementUpdateState.Pending.class,
-        skippedVersionEvaluator.evaluate(FixtureLoader.engagement("ENG-1003")));
-    var unknownVersion = assertInstanceOf(
-        EngagementUpdateState.Unknown.class,
-        skippedVersionEvaluator.evaluate(FixtureLoader.engagement("ENG-1002")));
-
-    var pendingState = assertInstanceOf(EngagementUpdateState.Pending.class, pending);
-    var missingState = assertInstanceOf(EngagementUpdateState.Unknown.class, missing);
-    var aheadState = assertInstanceOf(EngagementUpdateState.Unknown.class, ahead);
+    var skippedVersionPending = skippedVersionEvaluator.evaluate(
+        FixtureLoader.engagement("ENG-1003"));
+    var unknownVersion = skippedVersionEvaluator.evaluate(
+        FixtureLoader.engagement("ENG-1002"));
 
     assertAll(
         () -> assertEquals(UpdateStatus.CURRENT, current.status()),
-        () -> assertEquals(2, pendingState.pendingVersionCount()),
+        () -> assertEquals(2, pending.pendingVersionCount()),
         () -> assertEquals(1, skippedVersionPending.pendingVersionCount()),
         () -> assertEquals("ENGAGEMENT_VERSION_NOT_FOUND", unknownVersion.reason()),
-        () -> assertEquals("TEMPLATE_METADATA_UNAVAILABLE", missingState.reason()),
-        () -> assertEquals("ENGAGEMENT_VERSION_AHEAD_OF_CATALOG", aheadState.reason()));
+        () -> assertEquals("TEMPLATE_METADATA_UNAVAILABLE", missing.reason()),
+        () -> assertEquals("ENGAGEMENT_VERSION_AHEAD_OF_CATALOG", ahead.reason()));
   }
 
 }
