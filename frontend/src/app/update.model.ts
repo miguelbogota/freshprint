@@ -6,7 +6,7 @@ export type ChangeKind = 'ADDED' | 'CHANGED' | 'REMOVED';
 export interface SummaryChange {
   kind: ChangeKind;
   description: string;
-  reviewRecommended?: boolean;
+  reviewRecommended: boolean;
 }
 
 export interface SummaryGroup {
@@ -16,7 +16,7 @@ export interface SummaryGroup {
 
 export type Summary =
   | { state: 'AVAILABLE'; generatedAt: string; groups: SummaryGroup[] }
-  | { state: 'COMPUTING'; reason?: string }
+  | { state: 'COMPUTING'; reason: string }
   | { state: 'UNAVAILABLE'; reason: string };
 
 export interface EngagementUpdate {
@@ -24,6 +24,7 @@ export interface EngagementUpdate {
   name: string;
   template: { id: string; displayName: string };
   status: UpdateStatus;
+  statusReason?: string;
   baselineVersion: number;
   targetVersion: number;
   pendingVersionCount: number;

@@ -51,6 +51,7 @@ I also reviewed and changed several design choices during the discussion:
 - I kept the Angular screen unstyled and removed the generated starter content rather than expanding this into a full product UI.
 - I kept raw diff interpretation in Java. Angular only displays the human-readable summary it receives.
 - I kept `ACCEPTED` separate from a completed update and prevented duplicate clicks while a decision is being sent.
+- I tightened the Angular types to match the future JSON contract and changed raw status/reason codes into plain-language screen text.
 
 ### How I would guide other engineers using AI on this system
 

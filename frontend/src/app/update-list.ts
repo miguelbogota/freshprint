@@ -15,9 +15,18 @@ import type { EngagementUpdate } from './update.model';
               (click)="selected.emit(item.engagementId)"
               [attr.aria-current]="selectedId() === item.engagementId ? 'true' : null"
             >
-              {{ item.name }} — {{ item.status }}
-              @if (item.status === 'PENDING') {
-                ({{ item.pendingVersionCount }} version(s) behind)
+              {{ item.name }} —
+              @switch (item.status) {
+                @case ('PENDING') {
+                  Update to review ({{ item.pendingVersionCount }}
+                  {{ item.pendingVersionCount === 1 ? 'newer version' : 'newer versions' }})
+                }
+                @case ('CURRENT') {
+                  Up to date
+                }
+                @case ('UNKNOWN') {
+                  Checking update status
+                }
               }
             </button>
           </li>

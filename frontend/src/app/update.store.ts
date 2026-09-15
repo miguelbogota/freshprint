@@ -15,25 +15,25 @@ export class UpdateStore {
   );
   readonly decisionState = signal<DecisionState>('IDLE');
   readonly operationId = signal<string | null>(null);
-
-  constructor(private readonly gateway: DecisionGateway) {}
-
-  select(engagementId: string): void {
-    if (this.decisionState() === 'SENDING') return;
-    if (!this.items().some((item) => item.engagementId === engagementId)) return;
-
-    this.selectedId.set(engagementId);
-    this.decisionState.set('IDLE');
-    this.operationId.set(null);
-  }
-
-  canDecide(): boolean {
+  readonly canDecide = computed(() => {
     const item = this.selected();
     return (
       item?.status === 'PENDING' &&
       item.summary?.state === 'AVAILABLE' &&
       (this.decisionState() === 'IDLE' || this.decisionState() === 'FAILED')
     );
+  });
+
+  constructor(private readonly gateway: DecisionGateway) {}
+
+  select(engagementId: string): void {
+    if (this.decisionState() === 'SENDING') return;
+    if (this.selectedId() === engagementId) return;
+    if (!this.items().some((item) => item.engagementId === engagementId)) return;
+
+    this.selectedId.set(engagementId);
+    this.decisionState.set('IDLE');
+    this.operationId.set(null);
   }
 
   async decide(decision: UpdateDecision['decision']): Promise<void> {

@@ -7,13 +7,18 @@ import type { EngagementUpdate, UpdateDecision } from './update.model';
   template: `
     <section aria-label="Selected engagement">
       <h2>{{ item().name }}</h2>
-      <p>{{ item().template.displayName }} — {{ item().status }}</p>
-      <p>Freshness: {{ item().freshness.state }} (checked {{ item().freshness.checkedAt }})</p>
+      <p>{{ item().template.displayName }}</p>
+      <p>Last checked: {{ item().freshness.checkedAt }}.</p>
+      @if (item().freshness.state === 'STALE') {
+        <p>This information may be out of date.</p>
+      }
 
       @if (item().status === 'PENDING') {
         <p>
           Template version {{ item().baselineVersion }} → {{ item().targetVersion }}.
-          {{ item().pendingVersionCount }} published update(s) to review.
+          {{ item().pendingVersionCount }}
+          {{ item().pendingVersionCount === 1 ? 'published update' : 'published updates' }} to
+          review.
         </p>
 
         @if (item().summary; as summary) {
@@ -38,7 +43,7 @@ import type { EngagementUpdate, UpdateDecision } from './update.model';
               <p>Change summary is still being prepared.</p>
             }
             @case ('UNAVAILABLE') {
-              <p>Change summary is unavailable: {{ summary.reason }}.</p>
+              <p>Change summary is unavailable right now. Please check again later.</p>
             }
           }
         } @else {

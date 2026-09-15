@@ -41,5 +41,12 @@ describe('UpdateStore', () => {
     expect(store.decisionState()).toBe('ACCEPTED');
     expect(store.operationId()).toBe('OP-7241');
     expect(store.selected()?.status).toBe('PENDING');
+
+    const declineStore = new UpdateStore(TestBed.inject(DecisionGateway));
+    await declineStore.decide('DECLINE');
+    expect(calls[1]).toEqual({
+      engagementId: 'ENG-1007',
+      request: { decision: 'DECLINE', expectedBaselineVersion: 6, targetVersion: 8 },
+    });
   });
 });
