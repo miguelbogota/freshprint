@@ -4,6 +4,7 @@ import com.freshprint.domain.template.TemplateMetadata;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -74,6 +75,7 @@ class EngagementUpdateStateTest {
         templateId,
         "Canadian Engagement",
         latestVersion,
-        PUBLISHED_AT);
+        PUBLISHED_AT,
+        IntStream.rangeClosed(1, latestVersion).boxed().toList());
   }
 }

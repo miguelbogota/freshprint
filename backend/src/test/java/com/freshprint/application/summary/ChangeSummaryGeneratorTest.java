@@ -1,8 +1,6 @@
 package com.freshprint.application.summary;
 
-import com.freshprint.application.summary.strategy.FallbackChangeSummaryStrategy;
-import com.freshprint.application.summary.strategy.QuestionChangeSummaryStrategy;
-import com.freshprint.application.summary.strategy.SectionChangeSummaryStrategy;
+import com.freshprint.application.summary.strategy.StandardSummaryStrategies;
 import com.freshprint.domain.summary.SummaryChangeKind;
 import com.freshprint.testfixture.FixtureLoader;
 import org.junit.jupiter.api.Test;
@@ -33,10 +31,7 @@ class ChangeSummaryGeneratorTest {
   @Test
   void summarizesKnownAndUnknownChanges() throws IOException {
     var generator = new ChangeSummaryGenerator(
-        List.of(
-            new QuestionChangeSummaryStrategy(),
-            new SectionChangeSummaryStrategy(),
-            new FallbackChangeSummaryStrategy()),
+        StandardSummaryStrategies.create(),
         Clock.fixed(GENERATED_AT, ZoneOffset.UTC));
     var diff = FixtureLoader.diff("template-diff-review-ca-v6-v8.json");
 

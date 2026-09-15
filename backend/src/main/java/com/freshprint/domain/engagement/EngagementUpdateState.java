@@ -87,8 +87,16 @@ public sealed interface EngagementUpdateState
       if (engagement.templateVersion() >= template.latestVersion()) {
         throw new IllegalArgumentException("pending target must be newer than the baseline");
       }
+      if (!template.hasVersion(engagement.templateVersion())) {
+        throw new IllegalArgumentException("engagement baseline must be a published version");
+      }
       if (pendingVersionCount < 1) {
         throw new IllegalArgumentException("pendingVersionCount must be positive");
+      }
+      if (pendingVersionCount
+          != template.countVersionsAfter(engagement.templateVersion())) {
+        throw new IllegalArgumentException(
+            "pendingVersionCount must match the published template versions");
       }
     }
 
