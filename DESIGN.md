@@ -75,7 +75,8 @@ The real system would use the following JSON contract. For this exercise, Java a
             "changes": [
               {
                 "kind": "CHANGED",
-                "description": "Materiality threshold changed from 5% to 4%."
+                "description": "Materiality threshold changed from 5% to 4%.",
+                "reviewRecommended": false
               }
             ]
           }
@@ -90,7 +91,7 @@ The real system would use the following JSON contract. For this exercise, Java a
 }
 ```
 
-`summary.state` is `AVAILABLE`, `COMPUTING`, or `UNAVAILABLE`. When it is not available, the response omits `groups` and includes a reason where useful. `freshness.state` is `FRESH` or `STALE`, with the last check time. These explicit states avoid using `null` for several different meanings.
+`summary.state` is `AVAILABLE`, `COMPUTING`, or `UNAVAILABLE`. When it is not available, the response omits `groups` and includes a reason. `freshness.state` is `FRESH` or `STALE`, with the last check time. These explicit states avoid using `null` for several different meanings.
 
 `POST /api/engagements/ENG-1003/template-update-decisions`
 
@@ -110,6 +111,30 @@ The real system would use the following JSON contract. For this exercise, Java a
 ```
 
 The versions confirm exactly what the user reviewed. If a newer version appears before the decision is processed, the server returns `409 Conflict` and asks the client to refresh. Apply may be asynchronous because loading the engagement is slow. `ACCEPTED` means the operation started, not that the template content was already merged.
+
+### Future Contract Implementation
+
+The examples above are the intended wire contract, not Java domain objects serialized directly. A future API adapter would build each response item from the engagement metadata index, `EngagementUpdateEvaluator`, template metadata, and `PendingUpdateSummaryService`. The index supplies `freshness.checkedAt` and whether it is `FRESH` or `STALE`; the evaluator does not know about freshness. The summary service supplies the readable groups, not raw JSON paths for Angular to interpret.
+
+For a pending engagement, `summary` is always present. It has one of three shapes: `AVAILABLE` with `generatedAt` and readable `groups`, `COMPUTING` with `reason`, or `UNAVAILABLE` with `reason`. For example:
+
+```json
+{ "state": "COMPUTING", "reason": "SUMMARY_IN_PROGRESS" }
+```
+
+```json
+{ "state": "UNAVAILABLE", "reason": "TEMPLATE_DIFF_UNAVAILABLE" }
+```
+
+`generatedAt` and `groups` belong only to `AVAILABLE`, as shown in the main GET example. `reason` is required for `COMPUTING` and `UNAVAILABLE`; `reviewRecommended` is a boolean on every change. `CURRENT` has no pending summary. An `UNKNOWN` item has no pending summary and includes a `statusReason` such as `TEMPLATE_METADATA_UNAVAILABLE`. `targetVersion` and `pendingVersionCount` can be zero for `UNKNOWN`; Angular must not treat zero as a real template version. These are the field rules I would make exact in a JSON Schema or OpenAPI definition before wiring the two excerpts together. The current Angular model would then make `COMPUTING.reason` and `reviewRecommended` required and add `statusReason`.
+
+Angular would read this response through a future HTTP gateway instead of its hardcoded fixture. For a decision, it would send the selected engagement ID in the URL and the reviewed `decision`, `expectedBaselineVersion`, and `targetVersion` in the body. The server would re-check those versions before returning `ACCEPTED`. If either reviewed version is stale, the response is `409 Conflict`:
+
+```json
+{ "code": "VERSION_CONFLICT", "currentBaselineVersion": 3, "currentTargetVersion": 6 }
+```
+
+Angular would refresh the item and require a new review; it would not retry the old request blindly. Neither excerpt implements this HTTP adapter or the actual template merge, as requested by the exercise.
 
 ## 2. Implementation Plan
 

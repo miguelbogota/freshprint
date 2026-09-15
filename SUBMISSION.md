@@ -10,6 +10,8 @@
 - Existing engagements can be indexed asynchronously or when they are normally opened. Until their metadata is available, the system reports their state as `UNKNOWN`.
 - The targeted implementation has no previous Apply/Decline history and treats the engagement's recorded template version as its baseline, as required by the exercise.
 - The Java and Angular submissions are intentionally separate excerpts. They follow the same JSON contract but do not communicate over HTTP.
+- The Angular excerpt only enables decisions when a pending engagement has an available summary. This avoids asking for a decision without showing the changes; a production policy could differ.
+- The Angular decision gateway returns `ACCEPTED` as a fixture response. That means the request was received, not that the engagement was updated.
 - Applying template content, migrating customer answers, supplying default values, and rolling back an update are outside scope.
 
 ## AI Usage
@@ -26,6 +28,8 @@ I used ChatGPT/Codex as a design and implementation assistant. So far, it has he
 - Keep the design aligned with the limited Java and Angular excerpts requested by the exercise.
 
 During the Java implementation, I also used AI to discuss package boundaries, compare records with service classes, explore and then remove the summary Strategy pattern, create fixture-backed test cases, and review the finished branch. I verified the generated code with Maven, Javadoc checks, JSON parsing, and a manual review of the domain rules.
+
+For Angular, AI helped draft a small component split, contract-shaped fixture, decision state, and two focused tests. I reviewed the client against the JSON contract and checked it with Angular's build and test commands.
 
 ### Where I corrected, rewrote, or ignored AI output
 
@@ -44,6 +48,9 @@ I also reviewed and changed several design choices during the discussion:
 - I changed the pending-version calculation from numeric subtraction to counting the actual published versions. This avoids assuming version numbers are consecutive.
 - I kept Jackson in the test scope and used a test fixture loader instead of adding JSON concerns to the production domain model.
 - I removed or postponed speculative features such as draft template migrations and detailed merge behavior because applying template content is outside scope.
+- I kept the Angular screen unstyled and removed the generated starter content rather than expanding this into a full product UI.
+- I kept raw diff interpretation in Java. Angular only displays the human-readable summary it receives.
+- I kept `ACCEPTED` separate from a completed update and prevented duplicate clicks while a decision is being sent.
 
 ### How I would guide other engineers using AI on this system
 
