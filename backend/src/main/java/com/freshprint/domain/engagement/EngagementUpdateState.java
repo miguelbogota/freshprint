@@ -5,11 +5,11 @@ import java.util.Objects;
 /**
  * A simple result of comparing an engagement with its latest template.
  *
- * @param engagement engagement being checked
- * @param status current, pending, or unknown
- * @param targetVersion latest template version, or zero when unknown
+ * @param engagement          engagement being checked
+ * @param status              current, pending, or unknown
+ * @param targetVersion       latest template version, or zero when unknown
  * @param pendingVersionCount number of newer published versions
- * @param reason explanation when the status is unknown
+ * @param reason              explanation when the status is unknown
  */
 public record EngagementUpdateState(
     EngagementBaseline engagement,

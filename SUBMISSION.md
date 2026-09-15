@@ -1,85 +1,40 @@
 # Submission Notes
 
-## Assumptions Made
+## Assumptions
 
-- Published template versions are unique and stored in order within a product template. Version numbers do not need to be consecutive.
-- A reliable JSON diff can be generated directly between any two versions of the same template.
-- Template publication and engagement lifecycle actions can trigger hooks or events.
-- Hooks provide durable, retryable delivery so the metadata index can be kept up to date without reopening engagement files. Event handlers are idempotent, failed events can be retried, and a periodic reconciliation process detects and repairs any missed updates.
-- The engagement management system remains the source of truth for complete engagement files. The proposed metadata index stores only the small set of fields needed to determine update status.
-- Existing engagements can be indexed asynchronously or when they are normally opened. Until their metadata is available, the system reports their state as `UNKNOWN`.
-- The targeted implementation has no previous Apply/Decline history and treats the engagement's recorded template version as its baseline, as required by the exercise.
-- The Java and Angular submissions are intentionally separate excerpts. They follow the same JSON contract but do not communicate over HTTP.
-- The Angular excerpt only enables decisions when a pending engagement has an available summary. This avoids asking for a decision without showing the changes; a production policy could differ.
-- The Angular decision gateway returns `ACCEPTED` as a fixture response. That means the request was received, not that the engagement was updated.
-- Applying template content, migrating customer answers, supplying default values, and rolling back an update are outside scope.
+- The recorded engagement version is the baseline; targeted Java has no decision history. Published version numbers increase but may skip values.
+- The template system can quickly compare any two versions of the same template and produce a direct JSON diff.
+- Four durable hooks exist: `CreateTemplate` initializes template metadata; `UpdateTemplate` publishes a version and precomputes summaries; `CreateEngagement` indexes the initial template/version; `UpdateEngagement` refreshes it after successful Apply. Handlers retry, deduplicate, and reconcile missed events.
+- The one-minute limit is for loading **engagements**, not templates. Lists use cached engagement metadata; summaries use cached or newly generated template data.
+- Engagement IDs/names can be listed without a full load. Old files are indexed in the background or during normal loads; until then they show `UNKNOWN`.
+- Full files stay in customer-specific storage. The firm-scoped index is a copy; shared template data/caches hold no customer answers.
+- Apply/Decline return a quick `ACCEPTED` receipt and finish asynchronously. The UI does not wait for completion; indexed metadata changes only after successful Apply.
+- Java and Angular are separate, no-HTTP excerpts. Requiring a ready summary before a decision is my Angular demo safety choice, not a prompt requirement.
 
 ## AI Usage
 
-### Where AI helped
+### Where it helped
 
-I used ChatGPT/Codex as a design and implementation assistant. So far, it has helped me:
+I used ChatGPT/Codex to discuss the one-minute loading constraint, sketch the metadata-index and summary-cache design, draft the JSON contract, and build the focused Java and Angular examples. It helped surface edge cases such as several accumulated versions, missing metadata, stale decisions, and delayed events. I checked the code with the Java and Angular tests and builds, then reviewed the wording against the domain problem.
 
-- Break the problem into the template, engagement, metadata-index, diff, summary, and client responsibilities.
-- Explore the effect of the one-minute engagement-loading constraint.
-- Compare possible locations for the diff-to-summary transformation.
-- Draft and refine the architecture diagram and JSON API examples.
-- Identify edge cases such as accumulated versions, unavailable summaries, stale decisions, missed events, and existing unindexed engagements.
-- Keep the design aligned with the limited Java and Angular excerpts requested by the exercise.
+### What I changed or rejected
 
-During the Java implementation, I also used AI to discuss package boundaries, compare records with service classes, explore and then remove the summary Strategy pattern, create fixture-backed test cases, and review the finished branch. I verified the generated code with Maven, Javadoc checks, JSON parsing, and a manual review of the domain rules.
+I cut an early design that was too broad for a short exercise. In Java, I removed a Strategy pattern that made three simple summary rules harder to follow, and I changed pending-version counting to use the published-version list. I kept JSON loading in tests instead of mixing it into the domain code. In Angular, I removed generated starter UI and CSS, kept the app disconnected from Java as instructed, and replaced technical status codes on the screen with plain-language labels. I also kept `ACCEPTED` separate from an update actually being applied.
 
-For Angular, AI helped draft a small component split, contract-shaped fixture, decision state, and two focused tests. I reviewed the client against the JSON contract and checked it with Angular's build and test commands.
+### How I would use AI with a team
 
-### Where I corrected, rewrote, or ignored AI output
+I would give it small tasks with the contract and sample diff, ask for deterministic tests, and have an engineer review every business rule against real template content. We should not send customer answers or full engagement files to an unapproved AI service. AI output is a proposal; engineers own correctness, privacy, firm isolation, and operational behavior.
 
-The first proposed design was broader and more formal than this exercise needed. I asked for it to be rewritten in simpler language and reduced its scope so it fits the time limit and is easier to defend.
+### Where I would not trust it
 
-I also reviewed and changed several design choices during the discussion:
-
-- I chose JSON examples instead of TypeScript definitions for the client/server contract.
-- I clarified that `engagements.json` is fixture metadata representing multiple engagements, not the production storage format or one complete engagement file.
-- I kept the Java and Angular excerpts disconnected instead of adding a Spring/HTTP layer that the instructions explicitly exclude.
-- I chose backend transformation of raw diffs because it is shared business interpretation, while Angular remains responsible for presentation and interaction.
-- I selected a precompute-plus-on-demand strategy for summaries rather than recalculating them on every request.
-- I asked for the original package structure to be simplified and later added a `domain` parent once its purpose was clear.
-- I chose regular classes for services, while keeping immutable business values as records.
-- I removed the Strategy pattern because three small path checks were clearer as one converter for this exercise.
-- I changed the pending-version calculation from numeric subtraction to counting the actual published versions. This avoids assuming version numbers are consecutive.
-- I kept Jackson in the test scope and used a test fixture loader instead of adding JSON concerns to the production domain model.
-- I removed or postponed speculative features such as draft template migrations and detailed merge behavior because applying template content is outside scope.
-- I kept the Angular screen unstyled and removed the generated starter content rather than expanding this into a full product UI.
-- I kept raw diff interpretation in Java. Angular only displays the human-readable summary it receives.
-- I kept `ACCEPTED` separate from a completed update and prevented duplicate clicks while a decision is being sent.
-- I tightened the Angular types to match the future JSON contract and changed raw status/reason codes into plain-language screen text.
-
-### How I would guide other engineers using AI on this system
-
-- Give the tool a small task with the relevant domain types, contract, and fixture rather than asking it to invent the whole system.
-- Require deterministic tests for every generated business rule, especially version comparisons and diff summarization.
-- Review suggestions against the source template schema and product terminology.
-- Do not provide customer engagement content, answers, or other sensitive data to an unapproved AI service.
-- Treat AI output as a proposal. The engineer remains responsible for correctness, security, tenant isolation, and operational behavior.
-- Record important prompts or decisions when AI materially influences production code so the reasoning can be reviewed.
-
-### Where AI should not be trusted in this domain
-
-AI should not independently decide whether an update is professionally or legally significant, whether an accounting procedure can be removed, or whether a customer's existing work remains compliant. It may produce fluent but incomplete summaries, omit a raw change, or invent an implication that is not present in the template diff.
-
-For that reason, the main summary path is deterministic and traceable to the raw diff. Unknown paths remain visible for review rather than being guessed or silently removed. Human domain experts remain responsible for template content and professional judgment.
+I would not let AI make final calls on payments, security controls, authentication, firm isolation, secrets, or production deployment. Even convincing-looking code can leak data, mishandle retries, or skip a failure path. Those decisions need human review, threat modeling, and tests; customer data should not be sent to an unapproved AI tool. Payments are not part of this take-home, but the same rule would apply if Freshprint became a real app.
 
 ## Approximate Time Spent
 
-**TODO before submission:** Replace this note with the final total and a short breakdown for design, Java, Angular, testing, and documentation.
+About **10 hours elapsed** from starting last night to finishing today, but that includes sleep and work at my current job. Active work was about **3 hours 15 minutes**: roughly 2 hours reading and validating the requirements and architecture, 1 hour implementing the Java and Angular excerpts, and 15 minutes cleaning up code and documentation.
 
 ## What I Would Do Next
 
-If I had more time after the targeted implementation, I would:
-
-1. Implement the event-driven engagement metadata index and an asynchronous backfill for existing engagements.
-2. Add the publication-triggered summary cache with on-demand generation for missing version combinations.
-3. Expose the documented API and replace Angular's in-memory gateway with an HTTP implementation.
-4. Add contract and integration tests for delayed or duplicate events, stale decisions, tenant isolation, and reconciliation.
-5. Design the actual Apply workflow, including preserving customer answers, validation, default values, partial failure, and rollback.
-
-**TODO before submission:** Reorder or replace these items based on what remains incomplete at the end of the exercise.
+1. Turn the plain Java logic into a real HTTP server with the metadata index, four hooks, summary cache, and async Apply/Decline operation tracking.
+2. Replace Angular's hardcoded gateway with the API and make the screen feel like a real product: clearer loading/error states, better layout, accessibility, and visual polish.
+3. Add end-to-end tests for firm isolation, stale decisions, missed events, and failed operations before building the actual template merge.

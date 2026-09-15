@@ -7,10 +7,10 @@ import java.util.Objects;
 /**
  * The latest published version of a product template.
  *
- * @param templateId    unique template identifier
- * @param displayName   user-facing template name
- * @param latestVersion latest published version number
- * @param publishedAt   time when the latest version was published
+ * @param templateId        unique template identifier
+ * @param displayName       user-facing template name
+ * @param latestVersion     latest published version number
+ * @param publishedAt       time when the latest version was published
  * @param publishedVersions ordered published version numbers
  */
 public record TemplateMetadata(
