@@ -6,7 +6,7 @@ It intentionally has no application framework, HTTP layer, controller, persisten
 
 ## Requirements
 
-- Java 25
+- Java 26
 - No global Maven installation is required
 
 ## Run the tests
