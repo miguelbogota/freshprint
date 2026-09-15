@@ -1,16 +1,31 @@
-# Freshprint Java Domain
+# Backend
 
-This module contains the framework-independent Java domain models, interfaces, and core logic for evaluating pending template updates and producing human-readable change summaries.
+This is the Java side of Freshprint.
 
-It intentionally has no application framework, HTTP layer, controller, persistence adapter, or runnable service. Those production concerns are described in `DESIGN.md` but are outside the targeted implementation.
+Right now, it has the main business models and a few tests. There is no Spring app, API, database, or server to start. That is intentional: this part is all about the business logic.
 
-## Requirements
+## Folders
 
-- Java 25
-- No global Maven installation is required
+```text
+src/main/java/com/freshprint/
+├── domain/
+│   ├── engagement/   Is an engagement current or behind?
+│   ├── template/     What template and changes are we looking at?
+│   └── summary/      How do we show those changes to a person?
+└── application/
+    └── port/         How the future services will ask for template data
+```
+
+The update checker and summary strategies are coming next.
 
 ## Run the tests
 
+You need Java 26, but you do not need to install Maven.
+
 ```shell
-./mvnw test
+./mvnw clean test
 ```
+
+The current tests cover the three update statuses, invalid version combinations, raw diff operations, and immutable lists.
+
+The bigger picture is in [DESIGN.md](../DESIGN.md).
