@@ -15,8 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 
 /** Exercises the real HTTP contract against isolated in-memory storage. */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = "spring.datasource.url=jdbc:h2:mem:api-test;DB_CLOSE_DELAY=-1")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = "spring.datasource.url=jdbc:h2:mem:api-test;DB_CLOSE_DELAY=-1")
 class ApiIntegrationTest {
 
   @LocalServerPort
@@ -55,7 +54,8 @@ class ApiIntegrationTest {
     for (int i = 0; i < 30; i++) {
       var operation = request("GET", "/api/template-update-operations/" + operationId, null);
       outcome = mapper.readTree(operation.body()).path("status").asText();
-      if ("SUCCEEDED".equals(outcome) || "FAILED".equals(outcome)) break;
+      if ("SUCCEEDED".equals(outcome) || "FAILED".equals(outcome))
+        break;
       Thread.sleep(50);
     }
     assertEquals("SUCCEEDED", outcome);
@@ -73,7 +73,8 @@ class ApiIntegrationTest {
     for (int i = 0; i < 30; i++) {
       outcome = mapper.readTree(request("GET", "/api/template-update-operations/" + operationId, null)
           .body()).path("status").asText();
-      if ("SUCCEEDED".equals(outcome) || "FAILED".equals(outcome)) break;
+      if ("SUCCEEDED".equals(outcome) || "FAILED".equals(outcome))
+        break;
       Thread.sleep(50);
     }
     assertEquals("SUCCEEDED", outcome);
@@ -86,12 +87,34 @@ class ApiIntegrationTest {
         "{\"decision\":\"DECLINE\",\"expectedBaselineVersion\":4,\"targetVersion\":5}").statusCode());
   }
 
+  @Test
+  void reportsMissingResourcesAndInvalidDecisions() throws Exception {
+    assertEquals(404, request("GET", "/api/engagements/ENG-MISSING/template-update", null).statusCode());
+    assertEquals(404, request("GET", "/api/template-update-operations/OP-MISSING", null).statusCode());
+    var invalid = request("POST", "/api/engagements/ENG-1003/template-update-decisions",
+        "{\"decision\":\"SKIP\",\"expectedBaselineVersion\":3,\"targetVersion\":5}");
+    assertEquals(400, invalid.statusCode());
+    assertEquals("INVALID_DECISION", mapper.readTree(invalid.body()).path("code").asText());
+  }
+
+  @Test
+  void combinesSeveralVersionsIntoOneEffectiveSummary() throws Exception {
+    var response = request("GET", "/api/engagements/ENG-1003/template-update", null);
+    assertEquals(200, response.statusCode());
+    var item = mapper.readTree(response.body());
+    assertEquals(2, item.path("pendingVersionCount").asInt());
+    assertTrue(response.body().contains("Threshold percent changed from 5.0 to 4.0."));
+    assertTrue(!response.body().contains("Threshold percent changed from 5.0 to 4.5."));
+  }
+
   private HttpResponse<String> request(String method, String path, String body) throws Exception {
     var builder = HttpRequest.newBuilder(URI.create("http://localhost:" + port + path))
         .timeout(Duration.ofSeconds(5));
-    if (body == null) builder.GET();
-    else builder.header("Content-Type", "application/json")
-        .method(method, HttpRequest.BodyPublishers.ofString(body));
+    if (body == null)
+      builder.GET();
+    else
+      builder.header("Content-Type", "application/json")
+          .method(method, HttpRequest.BodyPublishers.ofString(body));
     return http.send(builder.build(), HttpResponse.BodyHandlers.ofString());
   }
 }

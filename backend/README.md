@@ -14,6 +14,10 @@ There are no `static/` or `templates/` resource folders because this server retu
 
 The server prefers a direct baseline-to-latest diff. If the fixture only has adjacent versions, it combines them by JSON path into the effective change. Summaries are cached by template and version pair in memory for this demo. H2 keeps engagement baselines and decision operations across restarts. `schema.sql` defines the local demo tables; Hibernate validates the mapping instead of changing that schema on startup.
 
+The database stores only the small engagement index (ID, template, baseline version, and declined target) and decision-operation history. It does not store full engagement files or customer-entered form values. A decision is first saved as `ACCEPTED`, then processed in the background. Applying the baseline change and marking its operation `SUCCEEDED` happen in one transaction, so a failure cannot leave one committed without the other. A stale baseline cannot overwrite a newer one. On startup, unfinished operations become `FAILED` rather than pretending they succeeded.
+
+This setup fits a single-instance local demo. For production, use a migration tool such as Flyway instead of re-running `schema.sql`, a managed database instead of local H2, and a durable job queue for decisions. The in-process duplicate check also needs a database-enforced concurrency rule if several server instances can accept decisions at once. Tests cover API errors, multi-version summaries, stale writes, operation persistence, restart recovery, and transaction rollback.
+
 ## Run
 
 With Java 26:

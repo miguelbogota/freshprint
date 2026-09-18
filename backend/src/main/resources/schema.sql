@@ -17,3 +17,6 @@ CREATE TABLE IF NOT EXISTS operations (
   created_at TIMESTAMP WITH TIME ZONE NOT NULL,
   completed_at TIMESTAMP WITH TIME ZONE
 );
+
+CREATE INDEX IF NOT EXISTS idx_operations_engagement_status
+  ON operations (engagement_id, status);
