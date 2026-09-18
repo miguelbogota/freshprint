@@ -1,10 +1,10 @@
 # Backend
 
-The Spring Boot server turns the original Java logic into a running API. It keeps engagement metadata in a small local H2 database, loads shared template fixtures at startup, and never opens full engagement files on a list request.
+The Spring Boot server turns the original Java logic into a running API. Spring Data JPA and Hibernate store engagement metadata and decision operations in a small local H2 database. The server loads shared template fixtures at startup and never opens full engagement files on a list request.
 
-- `model/{engagement,template,summary}` holds the small domain values from the original take-home.
+- `model/{engagement,template,summary}` holds the small domain values from the original take-home. The two JPA entity classes in `model/engagement` map only the indexed engagement and operation tables.
 - `service/{update,summary,decision}` holds the rules and workflows. `service/port` keeps the template lookup interfaces.
-- `repository/` reads the fixture templates and stores indexed engagement metadata and operations.
+- `repository/` reads fixture templates and uses Spring Data JPA interfaces for the indexed engagement and operation tables. There is no application-level `JdbcTemplate` code.
 - `controller/` exposes the HTTP endpoints, while `dto/` defines their response and decision shapes.
 - `config/` wires local Spring settings; `exception/` formats expected API errors.
 
@@ -12,7 +12,7 @@ Tests mirror the relevant Java packages. `testfixture/` contains only shared tes
 
 There are no `static/` or `templates/` resource folders because this server returns JSON; Angular owns the HTML. The resources this server actually needs are `application.properties` and `schema.sql`.
 
-The server prefers a direct baseline-to-latest diff. If the fixture only has adjacent versions, it combines them by JSON path into the effective change. Summaries are cached by template and version pair in memory for this demo. H2 keeps engagement baselines and decision operations across restarts.
+The server prefers a direct baseline-to-latest diff. If the fixture only has adjacent versions, it combines them by JSON path into the effective change. Summaries are cached by template and version pair in memory for this demo. H2 keeps engagement baselines and decision operations across restarts. `schema.sql` defines the local demo tables; Hibernate validates the mapping instead of changing that schema on startup.
 
 ## Run
 

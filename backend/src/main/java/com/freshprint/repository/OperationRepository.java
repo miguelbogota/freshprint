@@ -1,51 +1,53 @@
 package com.freshprint.repository;
 
 import com.freshprint.dto.OperationResponse;
-import java.time.Instant;
+import com.freshprint.model.engagement.OperationEntity;
+import java.util.List;
 import java.util.Optional;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
-/** Stores decision receipts and their final outcomes. */
+/** Stores accepted decisions and maps their eventual outcomes to API values. */
 @Repository
 public class OperationRepository {
 
-  private final JdbcTemplate jdbc;
+  private final OperationJpaRepository jpa;
 
-  public OperationRepository(JdbcTemplate jdbc) {
-    this.jdbc = jdbc;
+  public OperationRepository(OperationJpaRepository jpa) {
+    this.jpa = jpa;
   }
 
   public boolean hasActive(String engagementId) {
-    var count = jdbc.queryForObject("SELECT COUNT(*) FROM operations WHERE engagement_id = ? "
-        + "AND status IN ('ACCEPTED', 'RUNNING')", Integer.class, engagementId);
-    return count != null && count > 0;
+    return jpa.existsByEngagementIdAndStatusIn(engagementId, List.of("ACCEPTED", "RUNNING"));
   }
 
   public void create(String id, String engagementId, String decision, int baseline, int target) {
-    jdbc.update("INSERT INTO operations (operation_id, engagement_id, decision, baseline_version, "
-        + "target_version, status, created_at) VALUES (?, ?, ?, ?, ?, 'ACCEPTED', ?)",
-        id, engagementId, decision, baseline, target, Instant.now());
+    jpa.save(new OperationEntity(id, engagementId, decision, baseline, target));
   }
 
+  @Transactional
   public void running(String id) {
-    jdbc.update("UPDATE operations SET status = 'RUNNING' WHERE operation_id = ?", id);
+    var operation = jpa.findById(id).orElseThrow();
+    operation.running();
   }
 
+  @Transactional
   public void completed(String id, String status, String message) {
-    jdbc.update("UPDATE operations SET status = ?, message = ?, completed_at = ? "
-        + "WHERE operation_id = ?", status, message, Instant.now(), id);
+    var operation = jpa.findById(id).orElseThrow();
+    operation.complete(status, message);
+  }
+
+  @Transactional
+  public void failInterrupted() {
+    for (var operation : jpa.findAllByStatusIn(List.of("ACCEPTED", "RUNNING"))) {
+      operation.complete("FAILED", "Server restarted before completion");
+    }
   }
 
   public Optional<OperationResponse> find(String id) {
-    return jdbc.query("SELECT operation_id, engagement_id, decision, status, message, "
-        + "created_at, completed_at FROM operations WHERE operation_id = ?", (rs, row) -> {
-          var completed = rs.getTimestamp("completed_at");
-          return new OperationResponse(rs.getString("operation_id"),
-              rs.getString("engagement_id"), rs.getString("decision"),
-              rs.getString("status"), rs.getString("message"),
-              rs.getTimestamp("created_at").toInstant().toString(),
-              completed == null ? null : completed.toInstant().toString());
-        }, id).stream().findFirst();
+    return jpa.findById(id).map(operation -> new OperationResponse(
+        operation.getOperationId(), operation.getEngagementId(), operation.getDecision(),
+        operation.getStatus(), operation.getMessage(), operation.getCreatedAt().toString(),
+        operation.getCompletedAt() == null ? null : operation.getCompletedAt().toString()));
   }
 }

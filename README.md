@@ -9,7 +9,7 @@ Opening one full engagement takes about a minute. The server therefore keeps a s
 ## What's here
 
 - [DESIGN.md](DESIGN.md) - the architecture, JSON contract, tests, operations, and tradeoffs.
-- [backend](backend/README.md) - Spring Boot API, H2 metadata index, fixture-backed template diffs, summaries, and asynchronous decisions.
+- [backend](backend/README.md) - Spring Boot API, Spring Data JPA/H2 metadata index, fixture-backed template diffs, summaries, and asynchronous decisions.
 - [frontend](frontend/README.md) - Angular dashboard with live API calls, search, filtering, responsive styling, and decisions.
 - [fixtures](fixtures/README.md) - sample templates, engagements, and JSON diffs.
 - [SUBMISSION.md](SUBMISSION.md) - assumptions, AI usage, time spent, and next steps.
