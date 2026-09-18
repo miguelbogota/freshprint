@@ -2,9 +2,15 @@
 
 The Spring Boot server turns the original Java logic into a running API. It keeps engagement metadata in a small local H2 database, loads shared template fixtures at startup, and never opens full engagement files on a list request.
 
-- `domain/` and `application/` are the original version-checking and summary rules.
-- `infrastructure/` loads fixture templates/diffs and reads the engagement metadata index.
-- `api/` exposes the list, detail, decision, and operation-status endpoints.
+- `model/{engagement,template,summary}` holds the small domain values from the original take-home.
+- `service/{update,summary,decision}` holds the rules and workflows. `service/port` keeps the template lookup interfaces.
+- `repository/` reads the fixture templates and stores indexed engagement metadata and operations.
+- `controller/` exposes the HTTP endpoints, while `dto/` defines their response and decision shapes.
+- `config/` wires local Spring settings; `exception/` formats expected API errors.
+
+Tests mirror the relevant Java packages. `testfixture/` contains only shared test helpers. Spring scans everything below `com.freshprint`, starting at `FreshprintApplication`.
+
+There are no `static/` or `templates/` resource folders because this server returns JSON; Angular owns the HTML. The resources this server actually needs are `application.properties` and `schema.sql`.
 
 The server prefers a direct baseline-to-latest diff. If the fixture only has adjacent versions, it combines them by JSON path into the effective change. Summaries are cached by template and version pair in memory for this demo. H2 keeps engagement baselines and decision operations across restarts.
 

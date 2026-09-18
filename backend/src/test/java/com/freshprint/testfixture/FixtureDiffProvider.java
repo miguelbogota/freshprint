@@ -1,7 +1,7 @@
 package com.freshprint.testfixture;
 
-import com.freshprint.application.port.TemplateDiffProvider;
-import com.freshprint.domain.template.TemplateDiff;
+import com.freshprint.service.port.TemplateDiffProvider;
+import com.freshprint.model.template.TemplateDiff;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;

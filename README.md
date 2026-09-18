@@ -51,4 +51,4 @@ This remains a local demo: templates come from bundled fixtures, and it has no a
 - [x] [SUBMISSION.md](SUBMISSION.md) now records the approximate active work time and the longer overnight elapsed time.
 - [ ] Before sending: make sure you can explain the choices in a live review.
 
-The original take-home implementation is preserved in the domain and application layers; this branch explores the fuller product around it.
+The original take-home rules are preserved in the backend's `model` and `service` packages; this branch explores the fuller product around them.

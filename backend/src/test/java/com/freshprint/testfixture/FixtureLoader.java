@@ -2,10 +2,10 @@ package com.freshprint.testfixture;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.freshprint.domain.engagement.EngagementBaseline;
-import com.freshprint.domain.template.TemplateChange;
-import com.freshprint.domain.template.TemplateDiff;
-import com.freshprint.domain.template.TemplateMetadata;
+import com.freshprint.model.engagement.EngagementBaseline;
+import com.freshprint.model.template.TemplateChange;
+import com.freshprint.model.template.TemplateDiff;
+import com.freshprint.model.template.TemplateMetadata;
 
 import java.io.IOException;
 import java.io.InputStream;
