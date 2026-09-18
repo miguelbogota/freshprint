@@ -1,5 +1,10 @@
 # Freshprint
 
+> **Note**
+>
+> Want to see the full thing working? Check out the [`alternative-approach`](../../tree/alternative-approach) branch. It contains a complete implementation with the frontend and backend wired together, built as an additional exploration beyond the scope of the take-home.
+
+
 Freshprint is a small take-home demo for a simple question: a template changed after a working file was created, so which files need attention, and what changed?
 
 An _engagement_ is the firm's working file. A _product template_ is the starting blueprint for that file. Users can review a newer template and choose Apply or Decline. This project shows the decision flow; it does **not** merge template content into an engagement.
