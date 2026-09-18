@@ -1,54 +1,55 @@
 # Freshprint
 
-Freshprint is a small full-stack demo for a simple question: a template changed after a working file was created, so which files need attention, and what changed?
+Freshprint helps firm staff answer a simple question: a product template changed, so which engagement files need attention, and what actually changed?
 
-An _engagement_ is the firm's working file. A _product template_ is the starting blueprint for that file. Users can review a newer template and choose Apply or Decline. This project shows the decision flow; it does **not** merge template content into an engagement.
+An *engagement* is a firm's working file. A *product template* is its starting blueprint. Staff can review a plain-language summary and choose Apply or Decline. This app demonstrates that decision flow; it does **not** merge template content into a full engagement file.
 
-Opening one full engagement takes about a minute. The server therefore keeps a small metadata index for fast update lists. It never opens a full engagement to serve the dashboard.
+Opening a full engagement can take about a minute, so the dashboard reads a small metadata index instead. The backend compares template versions and sends the summary to Angular. The frontend and backend are connected through HTTP; the JSON fixture in the frontend is only for tests.
 
-## What's here
+## Run both apps
 
-- [DESIGN.md](DESIGN.md) - the architecture, JSON contract, tests, operations, and tradeoffs.
-- [backend](backend/README.md) - Spring Boot API, Spring Data JPA/H2 metadata index, fixture-backed template diffs, summaries, and asynchronous decisions.
-- [frontend](frontend/README.md) - Angular dashboard with live API calls, search, filtering, responsive styling, and decisions.
-- [fixtures](fixtures/README.md) - sample templates, engagements, and JSON diffs.
-- [SUBMISSION.md](SUBMISSION.md) - assumptions, AI usage, time spent, and next steps.
+You'll need Java 26, Node 24.15+ or 26+, and npm. Start from the repository root and leave each command running in its own terminal.
 
-This `alternative-approach` branch builds the connected app on top of the original take-home logic. [DESIGN.md](DESIGN.md) and [SUBMISSION.md](SUBMISSION.md) describe the original scoped submission, not a claim that this branch is production-ready.
-
-## Try it
-
-Start the Java server first (Java 26; Maven wrapper included):
+Terminal 1 — start the Spring Boot API:
 
 ```shell
 cd backend
-./mvnw test
 ./mvnw spring-boot:run
 ```
 
-In another terminal, start Angular 22 (Node 24.15+ or 26+):
+Terminal 2 — start Angular:
 
 ```shell
 cd frontend
-npm install
-npm test -- --watch=false
-npm run build
+npm ci
 npm start
 ```
 
-Open `http://localhost:4200`. Angular proxies `/api` to the Java server on port 8080. The server seeds twelve demo engagements from JSON on first run; its H2 data lives in ignored `backend/data/`.
+Open [http://localhost:4200](http://localhost:4200). Angular forwards `/api` requests to Spring Boot on port 8080 through its dev proxy. Start the backend first so the dashboard can load data right away.
 
-Apply and Decline return a quick receipt. Angular checks the operation status and refreshes the list when it finishes. Apply advances the recorded template version; Decline keeps that version and hides the same offer until a newer template is published. The app does **not** merge template fields into an engagement file.
+On the first run, the backend seeds twelve demo engagements from the JSON fixtures. The local H2 database lives in ignored `backend/data/`, so decisions can survive an app restart. Apply and Decline return an `ACCEPTED` receipt quickly; Angular checks the operation's result and refreshes the list after success.
 
-This remains a local demo: templates come from bundled fixtures, and it has no authentication, firm isolation, real hook consumer, or full-file merge. Do not expose its API publicly without those pieces.
+## Check it
 
-## Take-home checklist
+Run these separately from the repository root:
 
-- [x] Design: architecture and client/server split, plan, testing, observability, failure modes, tradeoffs, and JSON API contract.
-- [x] Java: original domain rules plus Spring Boot HTTP API, H2 metadata index, async decisions, and unit/integration tests.
-- [x] Angular: live update list, summary review, Apply/Decline flow, API polling, responsive styles, and focused tests.
-- [x] Submission notes: assumptions, AI use, corrections, limits, and next steps.
-- [x] [SUBMISSION.md](SUBMISSION.md) now records the approximate active work time and the longer overnight elapsed time.
-- [ ] Before sending: make sure you can explain the choices in a live review.
+```shell
+cd backend
+./mvnw verify
+```
 
-The original take-home rules are preserved in the backend's `model` and `service` packages; this branch explores the fuller product around them.
+```shell
+cd frontend
+npm test -- --watch=false
+npm run build
+```
+
+## What's in the repo
+
+- [backend](backend/README.md) — Spring Boot API, JPA/H2 metadata index, summaries, and decision operations.
+- [frontend](frontend/README.md) — lazy-loaded Angular dashboard with scoped SCSS and live API calls.
+- [fixtures](fixtures/README.md) — sample engagements, templates, and template diffs.
+- [PRODUCT.md](PRODUCT.md) — who Freshprint is for and what the demo is meant to do.
+- [DESIGN.md](DESIGN.md) and [SUBMISSION.md](SUBMISSION.md) — the original take-home design and submission notes. They describe the scoped exercise; this branch goes further by connecting the apps.
+
+This is still a local portfolio demo. It has no authentication, firm isolation, durable hook consumer, or full-file template merge. Please don't expose the API publicly as-is.

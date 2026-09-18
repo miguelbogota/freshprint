@@ -1,6 +1,6 @@
 # Backend
 
-The Spring Boot server turns the original Java logic into a running API. Spring Data JPA and Hibernate store engagement metadata and decision operations in a small local H2 database. The server loads shared template fixtures at startup and never opens full engagement files on a list request.
+This Spring Boot app powers the Angular dashboard. It reads template fixtures, builds readable update summaries, and stores lightweight engagement metadata and decision operations with Spring Data JPA/Hibernate in a local H2 database. A list request never opens full engagement files.
 
 - `model/{engagement,template,summary}` holds the small domain values from the original take-home. The two JPA entity classes in `model/engagement` map only the indexed engagement and operation tables.
 - `service/{update,summary,decision}` holds the rules and workflows. `service/port` keeps the template lookup interfaces.
@@ -20,12 +20,14 @@ This setup fits a single-instance local demo. For production, use a migration to
 
 ## Run
 
-With Java 26:
+With Java 26, from the repository root:
 
 ```shell
-./mvnw test
+cd backend
 ./mvnw spring-boot:run
 ```
+
+Leave it running, then start Angular using the steps in the [root README](../README.md). To run backend tests separately from `backend/`, use `./mvnw verify`.
 
 The API runs at `http://localhost:8080`. Useful endpoints:
 
@@ -36,6 +38,6 @@ POST /api/engagements/{id}/template-update-decisions
 GET  /api/template-update-operations/{operationId}
 ```
 
-The POST body is `{"decision":"APPLY","expectedBaselineVersion":6,"targetVersion":8}` (or `DECLINE`). It rejects stale versions with `409`, returns an `ACCEPTED` operation ID quickly, and processes the decision asynchronously. Check the operation endpoint for `SUCCEEDED` or `FAILED`.
+The POST body is `{"decision":"APPLY","expectedBaselineVersion":6,"targetVersion":8}` (or `DECLINE`). It rejects stale versions with `409`, returns an `ACCEPTED` operation ID quickly, and processes the decision asynchronously. Angular polls the operation endpoint for `SUCCEEDED` or `FAILED`.
 
 This is a local portfolio demo, not a production engagement service: the fixtures are bundled, the H2 index represents one demo workspace, and auth, tenant isolation, durable hooks, and full-file template merging are not implemented. Keep the server local.
