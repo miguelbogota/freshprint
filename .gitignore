@@ -6,6 +6,10 @@
 
 # Java / Maven
 target/
+backend/data/
+frontend/dist/
+frontend/.angular/
+frontend/node_modules/
 
 # IDEs
 .idea/

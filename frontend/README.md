@@ -1,20 +1,12 @@
 # Frontend
 
-This is the small Angular side of Freshprint. It lets someone spot a template update, read the changes, and choose Apply or Decline. It uses a hardcoded response-shaped fixture; it makes no HTTP calls and does not talk to the Java excerpt.
+The Angular app is a live dashboard for the Java API. It shows which engagements need review, lets you search and filter them, reads the server's plain-language change summary, and sends versioned Apply or Decline decisions. It polls the accepted operation until the server reports the final result.
 
-There are only a few moving parts:
+`UpdateStore` owns loading, selection, and decision state. `DecisionGateway` is the only HTTP boundary. `UpdateList` and `UpdateDetail` handle display and user intent. The old fixture remains for isolated UI tests; the running app gets its data from the server.
 
-- `update.model.ts` describes the proposed JSON response and decision request.
-- `update.fixture.ts` gives the screen examples of pending, current, unknown, and still-computing information.
-- `UpdateStore` holds the selected engagement and decision state. Its `canDecide` rule enables actions only for a pending update with a ready summary. That is a demo safety choice, not a rule imposed by the exercise.
-- `UpdateList` shows the files; `UpdateDetail` shows the already-readable summary and emits Apply or Decline.
-- `DecisionGateway` returns a fake `ACCEPTED` receipt. It does **not** apply a template. The store sends the exact baseline and target versions the user reviewed, so a future server can reject a stale decision.
+## Run
 
-The screen uses plain labels instead of technical status codes. It does not interpret raw JSON diffs; that belongs to Java. There is no CSS, filtering, sorting, search, authentication, or bulk action work because the take-home does not ask for it.
-
-## Run it
-
-Use Node 24.15+ or 26+:
+Start the backend first, then use Node 24.15+ or 26+:
 
 ```shell
 npm install
@@ -23,4 +15,6 @@ npm run build
 npm start
 ```
 
-The two focused tests check summary display, disabled actions while a summary is still being prepared, versioned Apply/Decline requests, and duplicate-click protection. The intended API is in [../DESIGN.md](../DESIGN.md).
+Open `http://localhost:4200`. The dev proxy forwards `/api` to `localhost:8080`. Styles include responsive layouts, subtle entrance/hover motion, and a reduced-motion fallback.
+
+This is a local demo UI. It does not edit the actual engagement file, and the Java server has no authentication or firm isolation yet.

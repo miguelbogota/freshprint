@@ -28,6 +28,7 @@ export interface EngagementUpdate {
   baselineVersion: number;
   targetVersion: number;
   pendingVersionCount: number;
+  declined?: boolean;
   summary?: Summary;
   freshness: { state: FreshnessState; checkedAt: string };
 }
@@ -41,4 +42,10 @@ export interface UpdateDecision {
 export interface DecisionReceipt {
   operationId: string;
   status: 'ACCEPTED';
+}
+
+export interface DecisionOperation {
+  operationId: string;
+  status: 'ACCEPTED' | 'RUNNING' | 'SUCCEEDED' | 'FAILED';
+  message?: string;
 }

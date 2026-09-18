@@ -1,11 +1,31 @@
-import { Injectable } from '@angular/core';
-import type { DecisionReceipt, UpdateDecision } from './update.model';
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import type { DecisionOperation, DecisionReceipt, EngagementUpdate, UpdateDecision } from './update.model';
 
-/** In-memory stand-in for the documented decision endpoint. */
+/** Small HTTP boundary for the Spring Boot API. */
 @Injectable({ providedIn: 'root' })
 export class DecisionGateway {
-  submit(_engagementId: string, _decision: UpdateDecision): Promise<DecisionReceipt> {
-    // Keep the request shape visible, but do not merge template content here.
-    return Promise.resolve({ operationId: 'OP-DEMO', status: 'ACCEPTED' });
+  private readonly http = inject(HttpClient);
+
+  list(): Promise<EngagementUpdate[]> {
+    return firstValueFrom(
+      this.http.get<{ items: EngagementUpdate[] }>('/api/engagements/template-updates'),
+    ).then((response) => response.items);
+  }
+
+  submit(engagementId: string, decision: UpdateDecision): Promise<DecisionReceipt> {
+    return firstValueFrom(
+      this.http.post<DecisionReceipt>(
+        `/api/engagements/${encodeURIComponent(engagementId)}/template-update-decisions`,
+        decision,
+      ),
+    );
+  }
+
+  operation(operationId: string): Promise<DecisionOperation> {
+    return firstValueFrom(
+      this.http.get<DecisionOperation>(`/api/template-update-operations/${encodeURIComponent(operationId)}`),
+    );
   }
 }

@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { DecisionGateway } from './decision.gateway';
 import type { DecisionReceipt, UpdateDecision } from './update.model';
 import { UpdateStore } from './update.store';
+import { updateFixture } from './update.fixture';
 
 describe('UpdateStore', () => {
   it('sends the reviewed versions once and keeps ACCEPTED distinct from applied', async () => {
@@ -19,11 +20,14 @@ describe('UpdateStore', () => {
               calls.push({ engagementId, request });
               return pendingReceipt;
             },
+            list: async () => updateFixture,
+            operation: async () => new Promise(() => {}),
           },
         },
       ],
     });
     const store = TestBed.inject(UpdateStore);
+    await store.load();
 
     const firstDecision = store.decide('APPLY');
     await store.decide('DECLINE'); // ignored while the first request is in flight
@@ -43,6 +47,7 @@ describe('UpdateStore', () => {
     expect(store.selected()?.status).toBe('PENDING');
 
     const declineStore = new UpdateStore(TestBed.inject(DecisionGateway));
+    await declineStore.load();
     await declineStore.decide('DECLINE');
     expect(calls[1]).toEqual({
       engagementId: 'ENG-1007',

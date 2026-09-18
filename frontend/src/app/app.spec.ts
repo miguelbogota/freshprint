@@ -1,9 +1,14 @@
 import { TestBed } from '@angular/core/testing';
 import { App } from './app';
+import { DecisionGateway } from './decision.gateway';
+import { updateFixture } from './update.fixture';
 
 describe('App', () => {
   it('shows readable pending changes and blocks decisions while a summary computes', async () => {
-    await TestBed.configureTestingModule({ imports: [App] }).compileComponents();
+    await TestBed.configureTestingModule({
+      imports: [App],
+      providers: [{ provide: DecisionGateway, useValue: { list: async () => updateFixture } }],
+    }).compileComponents();
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     fixture.detectChanges();
@@ -14,7 +19,7 @@ describe('App', () => {
     expect(page.textContent).toContain('Update to review (2 newer versions)');
     expect(page.querySelectorAll('app-update-detail button:disabled')).toHaveLength(0);
 
-    const computingItem = Array.from(page.querySelectorAll('app-update-list button')).find(
+    const computingItem = Array.from(page.querySelectorAll('app-update-list .engagement')).find(
       (button) => button.textContent?.includes('Harbourview Logistics'),
     );
     expect(computingItem).toBeTruthy();
@@ -25,7 +30,7 @@ describe('App', () => {
     expect(page.textContent).toContain('Change summary is still being prepared.');
     expect(page.querySelectorAll('app-update-detail button:disabled')).toHaveLength(2);
 
-    const unknownItem = Array.from(page.querySelectorAll('app-update-list button')).find((button) =>
+    const unknownItem = Array.from(page.querySelectorAll('app-update-list .engagement')).find((button) =>
       button.textContent?.includes('New engagement awaiting metadata'),
     );
     expect(unknownItem).toBeTruthy();

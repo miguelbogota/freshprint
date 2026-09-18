@@ -1,23 +1,31 @@
 # Backend
 
-This is the plain Java part of Freshprint. There is no Spring app, API, database, or server to start; the take-home asks for the business logic, not a running service.
+The Spring Boot server turns the original Java logic into a running API. It keeps engagement metadata in a small local H2 database, loads shared template fixtures at startup, and never opens full engagement files on a list request.
 
-The flow is short:
+- `domain/` and `application/` are the original version-checking and summary rules.
+- `infrastructure/` loads fixture templates/diffs and reads the engagement metadata index.
+- `api/` exposes the list, detail, decision, and operation-status endpoints.
 
-1. `EngagementUpdateEvaluator` compares an engagement's recorded template version with the latest published template. It returns `CURRENT`, `PENDING`, or `UNKNOWN` and counts the actual newer versions.
-2. `PendingUpdateSummaryService` asks for one diff from the engagement's version straight to the latest version. If that diff is missing or mismatched, the update stays pending but its summary is `UNAVAILABLE`.
-3. `ChangeSummaryGenerator` groups changes by section and writes short descriptions. An unfamiliar path is kept in an "Other changes" group and marked for closer review. The current fallback can show a technical path; a production version would need better wording for those paths.
+The server prefers a direct baseline-to-latest diff. If the fixture only has adjacent versions, it combines them by JSON path into the effective change. Summaries are cached by template and version pair in memory for this demo. H2 keeps engagement baselines and decision operations across restarts.
 
-The `domain` folders hold engagement, template, and summary values. The `application` folders hold the update and summary logic. Small `port` interfaces let that logic ask for template data without knowing where it is stored. Records hold immutable data; classes do the work.
+## Run
 
-The tests read JSON from [../fixtures](../fixtures/README.md). A **test-only** `FixtureDiffProvider` chooses a file from the template ID and version pair. Missing direct fixture files return no diff; a real system could generate that diff from stored template versions. `COMPUTING` is represented in the model for the future async cache flow, but no cache is built here.
-
-## Test it
-
-Use Java 26. You do not need to install Maven:
+With Java 26:
 
 ```shell
-./mvnw clean test
+./mvnw test
+./mvnw spring-boot:run
 ```
 
-The three focused tests cover current and unknown states, accumulated and skipped versions, readable changes, missing diffs, and mismatched provider data. The wider architecture is in [../DESIGN.md](../DESIGN.md).
+The API runs at `http://localhost:8080`. Useful endpoints:
+
+```text
+GET  /api/engagements/template-updates
+GET  /api/engagements/{id}/template-update
+POST /api/engagements/{id}/template-update-decisions
+GET  /api/template-update-operations/{operationId}
+```
+
+The POST body is `{"decision":"APPLY","expectedBaselineVersion":6,"targetVersion":8}` (or `DECLINE`). It rejects stale versions with `409`, returns an `ACCEPTED` operation ID quickly, and processes the decision asynchronously. Check the operation endpoint for `SUCCEEDED` or `FAILED`.
+
+This is a local portfolio demo, not a production engagement service: the fixtures are bundled, the H2 index represents one demo workspace, and auth, tenant isolation, durable hooks, and full-file template merging are not implemented. Keep the server local.
