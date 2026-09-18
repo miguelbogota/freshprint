@@ -1,4 +1,4 @@
-/** The response shape used by the Angular excerpt and the design contract. */
+/** The response shape used by the Angular app and the design contract. */
 export type UpdateStatus = 'CURRENT' | 'PENDING' | 'UNKNOWN';
 export type FreshnessState = 'FRESH' | 'STALE';
 export type ChangeKind = 'ADDED' | 'CHANGED' | 'REMOVED';

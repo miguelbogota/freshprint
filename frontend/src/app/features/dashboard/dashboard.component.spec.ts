@@ -1,15 +1,15 @@
 import { TestBed } from '@angular/core/testing';
-import { App } from './app';
-import { DecisionGateway } from './decision.gateway';
-import { updateFixture } from './update.fixture';
+import { DashboardComponent } from './dashboard.component';
+import { DecisionGateway } from '../../core/services';
+import { updateFixture } from './data-access/update.fixture';
 
-describe('App', () => {
+describe('DashboardComponent', () => {
   it('shows readable pending changes and blocks decisions while a summary computes', async () => {
     await TestBed.configureTestingModule({
-      imports: [App],
+      imports: [DashboardComponent],
       providers: [{ provide: DecisionGateway, useValue: { list: async () => updateFixture } }],
     }).compileComponents();
-    const fixture = TestBed.createComponent(App);
+    const fixture = TestBed.createComponent(DashboardComponent);
     await fixture.whenStable();
     fixture.detectChanges();
     const page = fixture.nativeElement as HTMLElement;
@@ -30,8 +30,8 @@ describe('App', () => {
     expect(page.textContent).toContain('Change summary is still being prepared.');
     expect(page.querySelectorAll('app-update-detail button:disabled')).toHaveLength(2);
 
-    const unknownItem = Array.from(page.querySelectorAll('app-update-list .engagement')).find((button) =>
-      button.textContent?.includes('New engagement awaiting metadata'),
+    const unknownItem = Array.from(page.querySelectorAll('app-update-list .engagement')).find(
+      (button) => button.textContent?.includes('New engagement awaiting metadata'),
     );
     expect(unknownItem).toBeTruthy();
     (unknownItem as HTMLButtonElement).click();

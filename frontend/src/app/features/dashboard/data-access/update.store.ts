@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, signal } from '@angular/core';
-import { DecisionGateway } from './decision.gateway';
+import { DecisionGateway } from '../../../core/services';
 import type { EngagementUpdate, UpdateDecision } from './update.model';
 
 type DecisionState = 'IDLE' | 'SENDING' | 'ACCEPTED' | 'SUCCEEDED' | 'FAILED';
@@ -37,7 +37,11 @@ export class UpdateStore {
       const items = await this.gateway.list();
       this.items.set(items);
       if (!items.some((item) => item.engagementId === this.selectedId())) {
-        this.selectedId.set(items.find((item) => item.status === 'PENDING')?.engagementId ?? items[0]?.engagementId ?? null);
+        this.selectedId.set(
+          items.find((item) => item.status === 'PENDING')?.engagementId ??
+            items[0]?.engagementId ??
+            null,
+        );
       }
     } catch {
       this.loadError.set(true);
@@ -77,7 +81,9 @@ export class UpdateStore {
     } catch (error) {
       if (error instanceof HttpErrorResponse && error.status === 409) {
         await this.load();
-        this.message.set('The versions changed while you were reviewing. Please check the latest update.');
+        this.message.set(
+          'The versions changed while you were reviewing. Please check the latest update.',
+        );
       } else {
         this.message.set('Could not send your decision. Please try again.');
       }

@@ -1,6 +1,6 @@
 import type { EngagementUpdate } from './update.model';
 
-/** Hardcoded API-shaped data. No engagement file is loaded by this excerpt. */
+/** API-shaped data for isolated UI tests. No engagement file is loaded. */
 export const updateFixture: EngagementUpdate[] = [
   {
     engagementId: 'ENG-1007',
